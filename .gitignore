@@ -18,7 +18,8 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
+# package-lock.json SÍ se versiona (el CI usa `npm ci`, que lo requiere)
+!package-lock.json
 yarn.lock
 
 # ==============================================
@@ -110,6 +111,12 @@ $RECYCLE.BIN/
 # ==============================================
 .nyc_output/
 coverage/
+
+# ==============================================
+# COMPILACIÓN
+# ==============================================
+dist/
+dist/*.map
 .coverage
 *.lcov
 
