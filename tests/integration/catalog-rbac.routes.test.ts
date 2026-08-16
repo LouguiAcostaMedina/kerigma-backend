@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../../src/app';
 import type { AuthUser } from '../../src/types/auth';
@@ -31,7 +31,7 @@ describe('GET /api/v1/catalog', () => {
     const res = await request(app).get('/api/v1/catalog').set('Authorization', authHeader(superAdmin));
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.roles.entries).toContainEqual(['leader', 'Líder']);
+    expect(res.body.data.roles.entries).toContainEqual({ value: 'leader', label: 'Líder' });
     expect(res.body.data.churchStatuses.labels.active).toBe('Activa');
   });
 

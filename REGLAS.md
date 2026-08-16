@@ -20,7 +20,7 @@ El CI verifica `typecheck`, `typecheck:test` y `npm test` antes de aceptar un PR
 ## Respuestas y errores
 
 7. Todas las respuestas usan `ok()` / `fail()` de `src/utils/apiResponse.ts`
-   (envelope `{ ok, data }` / `{ ok, error: { code, message } }`).
+   (envelope `{ success: true, data, message? }` / `{ success: false, error, message, details? }`).
 8. Errores de negocio con las clases de `src/utils/errors.ts`: `NotFoundError`,
    `UnauthorizedError`, `ForbiddenError`, `ConflictError`, `ValidationError`,
    `TooManyRequestsError`, `BadRequestError`. Nunca responder `500` con el detalle interno.

@@ -45,7 +45,8 @@ describe('requireRole', () => {
   it('bloquea con 403 cuando el rol no está en la lista', () => {
     const { status, next } = run(requireRole('super_admin', 'admin'), makeReq(leader));
     expect(status).toBe(403);
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledOnce();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
   });
 
   it('bloquea con 401 si no hay usuario autenticado', () => {

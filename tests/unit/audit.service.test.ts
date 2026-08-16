@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { db } from '../../src/models';
 import { recordAudit, recordAuditAsync, sanitizeChanges } from '../../src/services/audit.service';
 
 const models = vi.hoisted(() => ({

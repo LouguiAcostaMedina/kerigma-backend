@@ -1,4 +1,4 @@
-const MINOR_WORDS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'e', 'el', 'a', 'en', 'san', 'santa']);
+const MINOR_WORDS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'e', 'el', 'a', 'en']);
 
 export function toTitleCase(value: string): string {
   return value

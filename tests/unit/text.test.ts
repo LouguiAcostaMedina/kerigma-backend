@@ -16,7 +16,7 @@ describe('toTitleCase', () => {
     expect(toTitleCase('   callao   ')).toBe('Callao');
   });
 
-  it('trata "san" y "santa" como palabra menor cuando no es inicial', () => {
+  it('capitaliza "san" y "santa" en nombres propios (no son palabras menores)', () => {
     expect(toTitleCase('de san martin')).toBe('De San Martin');
     expect(toTitleCase('santa rosa')).toBe('Santa Rosa');
   });

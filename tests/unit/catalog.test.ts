@@ -43,14 +43,14 @@ describe('catálogo único (catalog.ts)', () => {
     expect(roles.values).toEqual(['super_admin', 'admin', 'director', 'leader', 'reader']);
   });
 
-  it('getCatalog devuelve undefined para catálogos inexistentes', () => {
-    expect(getCatalog('no-existe')).toBeUndefined();
+  it('getCatalog devuelve null para catálogos inexistentes', () => {
+    expect(getCatalog('no-existe')).toBeNull();
   });
 
-  it('toEntries genera pares [valor, etiqueta] consistentes', () => {
+  it('toEntries genera pares {value, label} consistentes', () => {
     const entries = toEntries(getCatalog('roles')!);
-    expect(entries).toContainEqual(['super_admin', 'Super Admin']);
-    expect(entries).toContainEqual(['leader', 'Líder']);
+    expect(entries).toContainEqual({ value: 'super_admin', label: 'Super Administrador' });
+    expect(entries).toContainEqual({ value: 'leader', label: 'Líder' });
   });
 
   it('toMap genera un mapeo valor -> etiqueta', () => {
@@ -59,10 +59,12 @@ describe('catálogo único (catalog.ts)', () => {
     expect(map.female).toBe('Femenino');
   });
 
-  it('cada catálogo tiene values y labels alineados en longitud', () => {
+  it('cada valor de catálogo tiene su etiqueta definida', () => {
     for (const name of listCatalogNames()) {
       const definition = CATALOGS[name as keyof typeof CATALOGS];
-      expect(definition.values.length).toBe(definition.labels.length);
+      for (const value of definition.values) {
+        expect(definition.labels[value]).toBeDefined();
+      }
     }
   });
 });
