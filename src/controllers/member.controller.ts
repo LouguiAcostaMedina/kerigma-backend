@@ -3,7 +3,6 @@ import type { AuthUser } from '../types/auth';
 import type {
   CreateMemberInput,
   ListMembersQuery,
-  SearchMembersInput,
   UpdateMemberInput,
 } from '../schemas/member.schema';
 import * as memberService from '../services/member.service';
@@ -63,19 +62,6 @@ export async function deleteMember(req: Request, res: Response): Promise<void> {
   res.status(200).json(ok(null, 'Miembro eliminado exitosamente'));
 }
 
-export async function deleteMultipleMembers(req: Request, res: Response): Promise<void> {
-  const scope = resolveMemberScope(req.user!);
-  const { ids } = req.body as { ids: string[] };
-  await memberService.deleteMultipleMembers(scope.churchId, ids);
-  res.status(200).json(ok(null, `${ids.length} miembro(s) eliminado(s) correctamente`));
-}
-
-export async function getMembersStats(_req: Request, res: Response): Promise<void> {
-  const scope = resolveMemberScope(_req.user!);
-  const stats = await memberService.getMembersStats(scope.churchId);
-  res.status(200).json(ok(stats));
-}
-
 export async function updateMemberStatus(req: Request, res: Response): Promise<void> {
   const scope = resolveMemberScope(req.user!);
   const { status } = req.body as { status: 'active' | 'inactive' | 'suspended' | 'transferred' | 'graduated' };
@@ -90,9 +76,3 @@ export async function assignToGroup(req: Request, res: Response): Promise<void> 
   res.status(200).json(ok(member, 'Miembro asignado al grupo correctamente'));
 }
 
-export async function searchMembers(req: Request, res: Response): Promise<void> {
-  const scope = resolveMemberScope(req.user!);
-  const input = req.body as SearchMembersInput;
-  const members = await memberService.searchMembers(scope.churchId, input);
-  res.status(200).json(ok(members));
-}

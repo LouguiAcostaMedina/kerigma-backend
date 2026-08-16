@@ -10,6 +10,7 @@ import * as userService from '../services/user.service';
 import { ok } from '../utils/apiResponse';
 import { isGlobalAdmin } from '../utils/roles';
 import { ForbiddenError } from '../utils/errors';
+import { CATALOGS, toEntries } from '../catalogs/catalog';
 
 function assertCanManageUsers(user: AuthUser): void {
   const isManager =
@@ -17,6 +18,16 @@ function assertCanManageUsers(user: AuthUser): void {
   if (!isManager) {
     throw new ForbiddenError('No tiene permisos para administrar usuarios');
   }
+}
+
+export async function listRoles(_req: Request, res: Response): Promise<void> {
+  res.status(200).json(
+    ok({
+      values: CATALOGS.roles.values,
+      entries: toEntries(CATALOGS.roles),
+      labels: CATALOGS.roles.labels,
+    }),
+  );
 }
 
 function resolveChurchId(user: AuthUser): string | null {
@@ -35,13 +46,6 @@ export async function listUsers(req: Request, res: Response): Promise<void> {
   const query = req.query as unknown as ListUsersQuery;
   const result = await userService.listUsers(churchId, query);
   res.status(200).json(ok(result));
-}
-
-export async function getUserById(req: Request, res: Response): Promise<void> {
-  assertCanManageUsers(req.user!);
-  const churchId = resolveChurchId(req.user!);
-  const user = await userService.getUserById(churchId, req.params.id);
-  res.status(200).json(ok(user));
 }
 
 export async function createUser(req: Request, res: Response): Promise<void> {
@@ -64,27 +68,12 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
   res.status(200).json(ok(null, 'Usuario eliminado exitosamente'));
 }
 
-export async function deleteMultipleUsers(req: Request, res: Response): Promise<void> {
-  assertCanManageUsers(req.user!);
-  const churchId = resolveChurchId(req.user!);
-  const ids = (req.body as { ids: string[] }).ids;
-  await userService.deleteMultipleUsers(churchId, ids);
-  res.status(200).json(ok(null, `${ids.length} usuario(s) eliminado(s)`));
-}
-
 export async function updateUserStatus(req: Request, res: Response): Promise<void> {
   assertCanManageUsers(req.user!);
   const churchId = resolveChurchId(req.user!);
   const status = (req.body as { status: 'active' | 'inactive' | 'suspended' | 'pending' }).status;
   const user = await userService.updateUserStatus(churchId, req.params.id, status);
   res.status(200).json(ok(user, 'Estado del usuario actualizado'));
-}
-
-export async function approveUser(req: Request, res: Response): Promise<void> {
-  assertCanManageUsers(req.user!);
-  const churchId = resolveChurchId(req.user!);
-  const user = await userService.approveUser(churchId, req.params.id);
-  res.status(200).json(ok(user, 'Usuario aprobado exitosamente'));
 }
 
 export async function bulkOperation(req: Request, res: Response): Promise<void> {
@@ -97,16 +86,12 @@ export async function bulkOperation(req: Request, res: Response): Promise<void> 
 
 export async function inviteUser(req: Request, res: Response): Promise<void> {
   assertCanManageUsers(req.user!);
-  const { resetToken } = await userService.inviteUser(req.user!.id, req.params.id);
-  res.status(200).json(ok({ resetToken }, 'Invitación enviada exitosamente'));
+  await userService.inviteUser(req.user!.id, req.params.id);
+  res.status(200).json(ok(null, 'Invitación enviada exitosamente'));
 }
 
 export async function resetUserPassword(req: Request, res: Response): Promise<void> {
   assertCanManageUsers(req.user!);
-  const { resetToken } = await userService.resetUserPassword(req.params.id);
-  res.status(200).json(ok({ resetToken }, 'Email de recuperación enviado exitosamente'));
-}
-
-export async function listRoles(_req: Request, res: Response): Promise<void> {
-  res.status(200).json(ok(userService.USER_ROLES));
+  await userService.resetUserPassword(req.params.id);
+  res.status(200).json(ok(null, 'Email de recuperación enviado exitosamente'));
 }

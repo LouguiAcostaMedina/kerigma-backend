@@ -1,10 +1,9 @@
-import { col, fn, Op, type WhereOptions } from 'sequelize';
+import { Op, type WhereOptions } from 'sequelize';
 import { db } from '../models';
 import type { Member } from '../models/Member.model';
 import type {
   CreateMemberInput,
   ListMembersQuery,
-  SearchMembersInput,
   UpdateMemberInput,
 } from '../schemas/member.schema';
 import { NotFoundError, ValidationError } from '../utils/errors';
@@ -272,19 +271,6 @@ export async function deleteMember(churchId: string | null, memberId: string): P
   await member.destroy();
 }
 
-export async function deleteMultipleMembers(churchId: string | null, ids: string[]): Promise<void> {
-  const where: Record<string, unknown> = { id: { [Op.in]: ids } };
-
-  if (churchId) {
-    const groupIds = (
-      await db.Group.findAll({ where: { churchId }, attributes: ['id'] })
-    ).map((g) => g.id);
-    where.groupId = { [Op.in]: groupIds };
-  }
-
-  await db.Member.destroy({ where });
-}
-
 export async function updateMemberStatus(
   churchId: string | null,
   memberId: string,
@@ -342,98 +328,3 @@ export async function assignToGroup(
   return getMember(churchId, memberId);
 }
 
-export async function getMembersStats(churchId: string | null) {
-  const groupWhere: Record<string, unknown> = {};
-  if (churchId) {
-    groupWhere.churchId = churchId;
-  }
-
-  const groupIds = (
-    await db.Group.findAll({ where: groupWhere, attributes: ['id'] })
-  ).map((g) => g.id);
-
-  const memberWhere: Record<string, unknown> = {};
-  if (groupIds.length > 0) {
-    memberWhere.groupId = { [Op.in]: groupIds };
-  }
-
-  const [totalMembers, activeMembers, inactiveMembers, byStatus, bySpiritual] = await Promise.all([
-    db.Member.count({ where: memberWhere }),
-    db.Member.count({ where: { ...memberWhere, status: 'active' } }),
-    db.Member.count({ where: { ...memberWhere, status: 'inactive' } }),
-    db.Member.findAll({
-      attributes: ['status', [fn('COUNT', col('id')), 'count']],
-      where: memberWhere,
-      group: ['status'],
-      raw: true,
-    }),
-    db.Member.findAll({
-      attributes: ['spiritualStatus', [fn('COUNT', col('id')), 'count']],
-      where: memberWhere,
-      group: ['spiritualStatus'],
-      raw: true,
-    }),
-  ]);
-
-  const baptized = await db.Member.count({ where: { ...memberWhere, baptized: true } });
-
-  return {
-    totalMembers,
-    activeMembers,
-    inactiveMembers,
-    baptized,
-    unbaptized: totalMembers - baptized,
-    byStatus: Object.fromEntries(
-      (byStatus as unknown as Array<{ status: string; count: string }>).map((r) => [r.status, Number(r.count)]),
-    ),
-    bySpiritualStatus: Object.fromEntries(
-      (bySpiritual as unknown as Array<{ spiritualStatus: string; count: string }>).map((r) => [
-        r.spiritualStatus,
-        Number(r.count),
-      ]),
-    ),
-  };
-}
-
-export async function searchMembers(
-  churchId: string | null,
-  input: SearchMembersInput,
-): Promise<MemberSummary[]> {
-  const { limit, offset, ...criteria } = input;
-
-  const memberWhere: Record<string, unknown> = {};
-  if (criteria.firstName) {
-    memberWhere.firstName = { [Op.iLike]: `%${criteria.firstName}%` };
-  }
-  if (criteria.lastName) {
-    memberWhere.lastName = { [Op.iLike]: `%${criteria.lastName}%` };
-  }
-  if (criteria.email) {
-    memberWhere.email = { [Op.iLike]: `%${criteria.email}%` };
-  }
-  if (criteria.phone) {
-    memberWhere.phone = { [Op.iLike]: `%${criteria.phone}%` };
-  }
-  if (criteria.status) {
-    memberWhere.status = criteria.status;
-  }
-  if (criteria.spiritualStatus) {
-    memberWhere.spiritualStatus = criteria.spiritualStatus;
-  }
-  if (criteria.gender) {
-    memberWhere.gender = criteria.gender;
-  }
-  if (criteria.groupId) {
-    memberWhere.groupId = criteria.groupId;
-  }
-
-  const members = await db.Member.findAll({
-    where: memberWhere,
-    include: [buildGroupInclude({ churchId: churchId ?? undefined })],
-    limit,
-    offset,
-    order: [['lastName', 'ASC'], ['firstName', 'ASC']],
-  });
-
-  return members.map(toMemberSummary);
-}

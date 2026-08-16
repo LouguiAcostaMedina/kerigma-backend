@@ -1,5 +1,6 @@
 import { Op, type WhereOptions } from 'sequelize';
 import { db, type User } from '../models';
+import { env } from '../config/env';
 import type { UserRole } from '../types/auth';
 import { signPasswordResetToken } from '../utils/jwt';
 import type {
@@ -8,6 +9,7 @@ import type {
   UpdateUserInput,
 } from '../schemas/user.schema';
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors';
+import { buildPasswordResetEmail, sendEmail } from './email.service';
 
 export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending';
 
@@ -23,6 +25,17 @@ export interface UserSummary {
   phone: string | null;
   churchId: string | null;
   church: { id: string; name: string } | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  dateOfBirth: string | null;
+  gender: string | null;
+  maritalStatus: string | null;
+  occupation: string | null;
+  emergencyContact: string | null;
+  emergencyPhone: string | null;
+  notes: string | null;
   isActive: boolean;
   isApproved: boolean;
   status: UserStatus;
@@ -71,7 +84,18 @@ function toUserSummary(user: User): UserSummary {
     role: user.role,
     phone: user.phone,
     churchId: user.churchId,
-    church: user.church ? { id: user.church.id, name: user.church.name } : null,
+    church: user.churchId ? { id: user.churchId, name: user.church?.name ?? '' } : null,
+    address: user.address,
+    city: user.city,
+    state: user.state,
+    zipCode: user.zipCode,
+    dateOfBirth: user.dateOfBirth,
+    gender: user.gender,
+    maritalStatus: user.maritalStatus,
+    occupation: user.occupation,
+    emergencyContact: user.emergencyContact,
+    emergencyPhone: user.emergencyPhone,
+    notes: user.notes,
     isActive: user.isActive,
     isApproved: user.isApproved,
     status: deriveStatus(user),
@@ -212,6 +236,17 @@ export async function createUser(actorId: string, input: CreateUserInput): Promi
     phone: input.phone ?? null,
     role: input.role,
     churchId: input.churchId ?? null,
+    address: input.address ?? null,
+    city: input.city ?? null,
+    state: input.state ?? null,
+    zipCode: input.zipCode ?? null,
+    dateOfBirth: input.dateOfBirth ?? null,
+    gender: input.gender ?? null,
+    maritalStatus: input.maritalStatus ?? null,
+    occupation: input.occupation ?? null,
+    emergencyContact: input.emergencyContact ?? null,
+    emergencyPhone: input.emergencyPhone ?? null,
+    notes: input.notes ?? null,
     isActive: input.isActive ?? true,
     isApproved: input.isApproved ?? true,
     createdBy: actorId,
@@ -244,6 +279,17 @@ export async function updateUser(
     phone: input.phone !== undefined ? input.phone : user.phone,
     role: input.role ?? user.role,
     churchId: input.churchId !== undefined ? input.churchId : user.churchId,
+    address: input.address !== undefined ? input.address : user.address,
+    city: input.city !== undefined ? input.city : user.city,
+    state: input.state !== undefined ? input.state : user.state,
+    zipCode: input.zipCode !== undefined ? input.zipCode : user.zipCode,
+    dateOfBirth: input.dateOfBirth !== undefined ? input.dateOfBirth : user.dateOfBirth,
+    gender: input.gender !== undefined ? input.gender : user.gender,
+    maritalStatus: input.maritalStatus !== undefined ? input.maritalStatus : user.maritalStatus,
+    occupation: input.occupation !== undefined ? input.occupation : user.occupation,
+    emergencyContact: input.emergencyContact !== undefined ? input.emergencyContact : user.emergencyContact,
+    emergencyPhone: input.emergencyPhone !== undefined ? input.emergencyPhone : user.emergencyPhone,
+    notes: input.notes !== undefined ? input.notes : user.notes,
     isActive: input.isActive ?? user.isActive,
     isApproved: input.isApproved ?? user.isApproved,
     updatedBy: actorId,
@@ -255,14 +301,6 @@ export async function updateUser(
 export async function deleteUser(scopeChurchId: string | null, userId: string): Promise<void> {
   const user = await findUser(scopeChurchId, userId);
   await user.destroy();
-}
-
-export async function deleteMultipleUsers(scopeChurchId: string | null, ids: string[]): Promise<void> {
-  const where: WhereOptions = { id: { [Op.in]: ids } };
-  if (scopeChurchId) {
-    where.churchId = scopeChurchId;
-  }
-  await db.User.destroy({ where });
 }
 
 export async function updateUserStatus(
@@ -280,12 +318,6 @@ export async function updateUserStatus(
     await user.update({ isActive: true, isApproved: false });
   }
 
-  return getUserById(scopeChurchId, userId);
-}
-
-export async function approveUser(scopeChurchId: string | null, userId: string): Promise<UserSummary> {
-  const user = await findUser(scopeChurchId, userId);
-  await user.update({ isActive: true, isApproved: true });
   return getUserById(scopeChurchId, userId);
 }
 
@@ -318,23 +350,17 @@ export async function bulkOperation(
   }
 }
 
-export async function inviteUser(actorId: string, userId: string): Promise<{ resetToken: string }> {
+export async function inviteUser(actorId: string, userId: string): Promise<void> {
   const user = await findUser(null, userId);
   const resetToken = signPasswordResetToken(user.id);
+  const resetLink = `${env.cors.frontendUrl}/reset-password/${resetToken}`;
   await user.update({ updatedBy: actorId });
-  return { resetToken };
+  await sendEmail(buildPasswordResetEmail(user.email, resetLink));
 }
 
-export async function resetUserPassword(userId: string): Promise<{ resetToken: string }> {
+export async function resetUserPassword(userId: string): Promise<void> {
   const user = await findUser(null, userId);
   const resetToken = signPasswordResetToken(user.id);
-  return { resetToken };
+  const resetLink = `${env.cors.frontendUrl}/reset-password/${resetToken}`;
+  await sendEmail(buildPasswordResetEmail(user.email, resetLink));
 }
-
-export const USER_ROLES: Array<{ id: string; name: string; description: string }> = [
-  { id: 'super_admin', name: 'Super Administrador', description: 'Acceso global al sistema y todas las iglesias' },
-  { id: 'admin', name: 'Administrador', description: 'Gestión completa de una iglesia' },
-  { id: 'director', name: 'Director', description: 'Gestión operativa de una iglesia' },
-  { id: 'leader', name: 'Líder', description: 'Gestión de un grupo celular' },
-  { id: 'reader', name: 'Lector', description: 'Acceso de solo lectura' },
-];

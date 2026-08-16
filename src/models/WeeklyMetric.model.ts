@@ -219,6 +219,7 @@ export default function defineWeeklyMetric(sequelize: Sequelize): typeof WeeklyM
         { fields: ['groupId'] },
         { fields: ['quarterId'] },
         { fields: ['churchId', 'status'] },
+        { fields: ['churchId', 'weekStart'] },
       ],
     },
   );

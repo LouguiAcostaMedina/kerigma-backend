@@ -81,4 +81,40 @@ describe('sanitizeRequest (control chars + trim)', () => {
     expect(() => runSanitize(reqA)).not.toThrow();
     expect(() => runSanitize(reqB)).not.toThrow();
   });
+
+  it('no aplica trim a los campos de credenciales (password/newPassword/confirmPassword)', () => {
+    const req = makeReq({
+      body: {
+        password: '  Contraseña1  ',
+        newPassword: ' OtraClave2 ',
+        confirmPassword: ' OtraClave2 ',
+        email: '  user@example.com  ',
+        name: '  Juan  ',
+      },
+      query: {},
+      params: {},
+    });
+
+    runSanitize(req);
+
+    expect(req.body).toEqual({
+      password: '  Contraseña1  ',
+      newPassword: ' OtraClave2 ',
+      confirmPassword: ' OtraClave2 ',
+      email: 'user@example.com',
+      name: 'Juan',
+    });
+  });
+
+  it('sigue eliminando caracteres de control incluso en campos de credenciales', () => {
+    const req = makeReq({
+      body: { password: 'Con\u0000trol\u007F1' },
+      query: {},
+      params: {},
+    });
+
+    runSanitize(req);
+
+    expect(req.body).toEqual({ password: 'Control1' });
+  });
 });

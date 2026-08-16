@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { TOTAL_BIBLE_LESSONS } from '../constants/lessons';
 
 const commonStudentFields = {
   firstName: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(100, 'El nombre es demasiado largo'),
@@ -79,26 +78,6 @@ export const bulkDeleteStudentsSchema = z.object({
   ids: z.array(z.string().uuid('El identificador no es válido')).min(1, 'Debe indicar al menos un estudiante'),
 });
 
-export const updateLessonsSchema = z.object({
-  lessons: z
-    .array(
-      z.object({
-        lessonNumber: z
-          .number()
-          .int('El número de lección debe ser entero')
-          .min(1, 'El número de lección debe ser al menos 1')
-          .max(TOTAL_BIBLE_LESSONS, `El número de lección no puede superar ${TOTAL_BIBLE_LESSONS}`),
-        lessonTitle: z.string().trim().max(255, 'El título es demasiado largo').optional(),
-        isCompleted: z.boolean().optional(),
-        score: z.number().min(0, 'La nota no puede ser negativa').max(20, 'La nota no puede superar 20').nullable().optional(),
-        notes: z.string().trim().max(2000, 'Las notas son demasiado largas').nullable().optional(),
-      }),
-    )
-    .min(1, 'Debe indicar al menos una lección')
-    .max(TOTAL_BIBLE_LESSONS, 'La cantidad de lecciones supera el máximo'),
-});
-
 export type CreateStudentInput = z.infer<typeof createStudentSchema>;
 export type UpdateStudentInput = z.infer<typeof updateStudentSchema>;
-export type UpdateLessonsInput = z.infer<typeof updateLessonsSchema>;
 export type ListStudentsQuery = z.infer<typeof listStudentsQuerySchema>;

@@ -108,6 +108,7 @@ export default function defineAttendanceRecord(sequelize: Sequelize): typeof Att
         },
         { fields: ['churchId'] },
         { fields: ['groupId', 'meetingDate'] },
+        { fields: ['churchId', 'meetingDate'] },
         { fields: ['memberId'] },
         { fields: ['recordedBy'] },
       ],

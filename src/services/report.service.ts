@@ -352,13 +352,6 @@ const REPORT_TEMPLATES = [
   },
 ];
 
-const DEFAULT_USER_CONFIG = {
-  defaultView: 'predefined',
-  itemsPerPage: 10,
-  notifications: { onScheduleRun: true, onShare: true },
-  chart: { theme: 'light', showLabels: true },
-};
-
 // ===================== HELPERS =====================
 
 function assertField(entity: ReportEntity, column: string): FieldDef {
@@ -1041,11 +1034,6 @@ export async function getPopularReports(user: AuthUser, limit: number): Promise<
   return reports.map(toReportSummary);
 }
 
-export async function getStatsSummary(user: AuthUser): Promise<Record<string, unknown>> {
-  const [usage, popular] = await Promise.all([getUsageStats(user, {}), getPopularReports(user, 5)]);
-  return { ...usage, popularReports: popular };
-}
-
 // ===================== MÉTRICAS =====================
 
 export async function getMembershipGrowthReport(user: AuthUser): Promise<ReportQueryResult> {
@@ -1058,66 +1046,6 @@ export async function getGroupActivityReport(user: AuthUser): Promise<ReportQuer
 
 export async function getBibleStudentProgressReport(user: AuthUser): Promise<ReportQueryResult> {
   return (await executePredefinedReport('bible-student-progress', {}, user)).data;
-}
-
-export async function getBaptismConversionReport(user: AuthUser): Promise<ReportQueryResult> {
-  return (await executePredefinedReport('baptism-conversion', {}, user)).data;
-}
-
-export async function getLeaderPerformanceReport(user: AuthUser): Promise<ReportQueryResult> {
-  return (await executePredefinedReport('leader-performance', {}, user)).data;
-}
-
-// ===================== COMPARATIVOS =====================
-
-export async function getComparativeReport(
-  user: AuthUser,
-  params: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  const scopeChurchId = resolveScopeChurchId(user);
-  const entity = (params.entity as ReportEntity) || 'members';
-  if (!ENTITY_TABLES[entity]) {
-    throw new ValidationError('Entidad de reporte no reconocida');
-  }
-  const data = await runAggregation({
-    entity,
-    groupBy: 'createdAt',
-    timeGroup: true,
-    scopeChurchId,
-  });
-  return { comparison: 'periods', ...data };
-}
-
-export async function getChurchComparativeReport(
-  user: AuthUser,
-  params: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  const scopeChurchId = resolveScopeChurchId(user);
-  const requested = params.churchIds;
-  const churchIds: string[] = scopeChurchId
-    ? [scopeChurchId]
-    : Array.isArray(requested)
-      ? (requested as string[]).map(String)
-      : [];
-
-  const rows: Array<Record<string, unknown>> = [];
-  for (const churchId of churchIds) {
-    const members = await runAggregation({
-      entity: 'members',
-      filters: [{ field: 'status', operator: 'eq', value: 'active' }],
-      scopeChurchId: churchId,
-    });
-    const groups = await runAggregation({ entity: 'groups', scopeChurchId: churchId });
-    const students = await runAggregation({ entity: 'students', scopeChurchId: churchId });
-    rows.push({
-      churchId,
-      activeMembers: members.summary.total,
-      totalGroups: groups.summary.total,
-      totalStudents: students.summary.total,
-    });
-  }
-
-  return { comparison: 'churches', rows, generatedAt: new Date().toISOString() };
 }
 
 // ===================== EXPORTACIÓN =====================
@@ -1140,14 +1068,4 @@ export async function exportReport(
   const csv = [headers.join(','), ...lines].join('\n');
   const extension = format === 'excel' ? 'csv' : 'txt';
   return { fileName: `reporte-${reportId}.${extension}`, content: csv };
-}
-
-// ===================== CONFIGURACIÓN =====================
-
-export function getUserReportConfig(): Record<string, unknown> {
-  return { ...DEFAULT_USER_CONFIG };
-}
-
-export function updateUserReportConfig(config: Record<string, unknown>): Record<string, unknown> {
-  return { ...DEFAULT_USER_CONFIG, ...config };
 }

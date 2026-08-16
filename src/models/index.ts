@@ -11,6 +11,7 @@ import defineDisciplePair, { DisciplePair } from './DisciplePair.model';
 import defineAttendanceRecord, { AttendanceRecord } from './AttendanceRecord.model';
 import defineQuarterlyGoal, { QuarterlyGoal } from './QuarterlyGoal.model';
 import defineCustomReport, { CustomReport } from './CustomReport.model';
+import defineAuditLog, { AuditLog } from './AuditLog.model';
 
 const sequelize = createSequelize();
 
@@ -26,6 +27,7 @@ defineDisciplePair(sequelize);
 defineAttendanceRecord(sequelize);
 defineQuarterlyGoal(sequelize);
 defineCustomReport(sequelize);
+defineAuditLog(sequelize);
 
 // =============================================
 // ASOCIACIONES
@@ -34,6 +36,10 @@ defineCustomReport(sequelize);
 // Church - User
 Church.hasMany(User, { foreignKey: 'churchId', as: 'members' });
 User.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// Church - User (pastor y líder asignados)
+Church.belongsTo(User, { foreignKey: 'pastorId', as: 'pastorUser' });
+Church.belongsTo(User, { foreignKey: 'leaderId', as: 'leaderUser' });
 
 // User (líder) - Group
 User.hasMany(Group, { foreignKey: 'leaderId', as: 'ledGroups' });
@@ -127,6 +133,10 @@ DisciplePair.belongsTo(BibleStudent, { foreignKey: 'discipleId', as: 'disciple' 
 Church.hasMany(DisciplePair, { foreignKey: 'churchId', as: 'disciplePairs', onDelete: 'CASCADE' });
 DisciplePair.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
 
+// User - AuditLog
+User.hasMany(AuditLog, { foreignKey: 'actorUserId', as: 'auditLogs', onDelete: 'CASCADE' });
+AuditLog.belongsTo(User, { foreignKey: 'actorUserId', as: 'actor' });
+
 // Group - AttendanceRecord
 Group.hasMany(AttendanceRecord, { foreignKey: 'groupId', as: 'attendanceRecords', onDelete: 'CASCADE' });
 AttendanceRecord.belongsTo(Group, { foreignKey: 'groupId', as: 'group' });
@@ -168,6 +178,7 @@ export interface DbModels {
   AttendanceRecord: typeof AttendanceRecord;
   QuarterlyGoal: typeof QuarterlyGoal;
   CustomReport: typeof CustomReport;
+  AuditLog: typeof AuditLog;
   sequelize: typeof sequelize;
 }
 
@@ -184,6 +195,7 @@ export const db: DbModels = {
   AttendanceRecord,
   QuarterlyGoal,
   CustomReport,
+  AuditLog,
   sequelize,
 };
 
@@ -202,4 +214,5 @@ export {
   AttendanceRecord,
   QuarterlyGoal,
   CustomReport,
+  AuditLog,
 };

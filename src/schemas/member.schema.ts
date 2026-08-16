@@ -63,26 +63,6 @@ export const assignGroupSchema = z.object({
   groupId: z.string().uuid('El grupo no es válido'),
 });
 
-export const bulkDeleteMembersSchema = z.object({
-  ids: z.array(z.string().uuid()).min(1, 'Debe indicar al menos un miembro'),
-});
-
-export const searchMembersSchema = z.object({
-  firstName: z.string().trim().max(100).optional(),
-  lastName: z.string().trim().max(100).optional(),
-  email: z.string().trim().email().optional(),
-  phone: z.string().trim().max(20).optional(),
-  groupId: z.string().uuid().optional(),
-  status: z.enum(['active', 'inactive', 'suspended', 'transferred', 'graduated']).optional(),
-  spiritualStatus: z
-    .enum(['new_believer', 'growing', 'mature', 'leader', 'teacher', 'visitor', 'inactive', 'other'])
-    .optional(),
-  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  offset: z.coerce.number().int().min(0).default(0),
-});
-
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
 export type ListMembersQuery = z.infer<typeof listMembersQuerySchema>;
-export type SearchMembersInput = z.infer<typeof searchMembersSchema>;

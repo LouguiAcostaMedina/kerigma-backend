@@ -7,16 +7,16 @@ import morgan from 'morgan';
 import path from 'path';
 import { env } from './config/env';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { audit } from './middlewares/audit.middleware';
 import { sanitizeRequest } from './middlewares/sanitize.middleware';
 import attendanceRoutes from './routes/attendance.routes';
 import authRoutes from './routes/auth.routes';
 import bulkImportRoutes from './routes/bulkImport.routes';
+import catalogRoutes from './routes/catalog.routes';
 import churchRoutes from './routes/church.routes';
 import dashboardRoutes from './routes/dashboard.routes';
-import goalRoutes from './routes/goal.routes';
 import groupRoutes from './routes/group.routes';
 import memberRoutes from './routes/member.routes';
-import metricRoutes from './routes/metric.routes';
 import reportRoutes from './routes/report.routes';
 import studentRoutes from './routes/student.routes';
 import userRoutes from './routes/user.routes';
@@ -89,18 +89,18 @@ export function createApp(): Express {
   );
 
   const basePath = `${env.apiBasePath}/${env.apiVersion}`;
+  const auditWritable = audit();
   app.use(`${basePath}/auth`, authRoutes);
-  app.use(`${basePath}/churches`, churchRoutes);
+  app.use(`${basePath}/catalog`, catalogRoutes);
+  app.use(`${basePath}/churches`, auditWritable, churchRoutes);
   app.use(`${basePath}/import`, bulkImportRoutes);
-  app.use(`${basePath}/groups`, groupRoutes);
-  app.use(`${basePath}/members`, memberRoutes);
-  app.use(`${basePath}/students`, studentRoutes);
-  app.use(`${basePath}/metrics`, metricRoutes);
-  app.use(`${basePath}/reports`, reportRoutes);
-  app.use(`${basePath}/attendance`, attendanceRoutes);
-  app.use(`${basePath}/goals`, goalRoutes);
+  app.use(`${basePath}/groups`, auditWritable, groupRoutes);
+  app.use(`${basePath}/members`, auditWritable, memberRoutes);
+  app.use(`${basePath}/students`, auditWritable, studentRoutes);
+  app.use(`${basePath}/reports`, auditWritable, reportRoutes);
+  app.use(`${basePath}/attendance`, auditWritable, attendanceRoutes);
   app.use(`${basePath}/dashboard`, dashboardRoutes);
-  app.use(`${basePath}/users`, userRoutes);
+  app.use(`${basePath}/users`, auditWritable, userRoutes);
 
   app.get('/health', (_req: Request, res: Response): void => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });

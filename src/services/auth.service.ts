@@ -19,12 +19,12 @@ import {
   ConflictError,
   ForbiddenError,
   isAppError,
-  NotFoundError,
   TooManyRequestsError,
   UnauthorizedError,
   ValidationError,
 } from '../utils/errors';
 import type { UserAttributes } from '../models/User.model';
+import { buildPasswordResetEmail, sendEmail } from './email.service';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
@@ -161,16 +161,18 @@ export async function updateProfile(userId: string, input: UpdateProfileInput): 
   return user;
 }
 
-export async function forgotPassword(input: ForgotPasswordInput): Promise<{ resetToken: string }> {
+export async function forgotPassword(input: ForgotPasswordInput): Promise<void> {
   const email = input.email.toLowerCase().trim();
   const user = await db.User.findOne({ where: { email } });
 
+  // Respuesta genérica en ambos casos para no revelar qué emails existen.
   if (!user || !user.isActive) {
-    throw new NotFoundError('No existe una cuenta con ese email');
+    return;
   }
 
   const resetToken = signPasswordResetToken(user.id);
-  return { resetToken };
+  const resetLink = `${env.cors.frontendUrl}/reset-password/${resetToken}`;
+  await sendEmail(buildPasswordResetEmail(user.email, resetLink));
 }
 
 export async function resetPassword(input: ResetPasswordInput): Promise<void> {

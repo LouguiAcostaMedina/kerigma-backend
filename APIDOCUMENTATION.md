@@ -23,8 +23,11 @@ http://localhost:5000/api/v1
 
 ## Envelope de respuesta
 
-- Éxito (200/201): `{ "ok": true, "data": ... }`
-- Error: `{ "ok": false, "error": { "code": "CODIGO", "message": "mensaje" } }`
+Toda respuesta usa el sobre unificado `ok()` / `fail()` de `src/utils/apiResponse.ts`:
+
+- Éxito (200/201): `{ "success": true, "data": ... }` (con `"message"` opcional)
+- Lista paginada: `{ "success": true, "data": [...], "currentPage": 1, "totalPages": 3, "total": 60, "from": 1, "to": 20 }`
+- Error: `{ "success": false, "error": "CODIGO", "message": "mensaje", "details": { ... } }` (`details` solo en errores de validación Zod)
 
 ## Códigos de error comunes
 
@@ -42,13 +45,17 @@ http://localhost:5000/api/v1
 
 ## Rate limits
 
+Los límites son configurables por env (`src/config/env.ts` → `env.rateLimit`). Valores por defecto:
+
 | Endpoint | Límite | Ventana |
 |----------|--------|---------|
-| `POST /auth/login` | 10 / IP | 15 min |
-| `POST /auth/signup` | 5 / IP | 15 min |
+| `POST /auth/login` | 5 / IP | 15 min |
+| `POST /auth/signup` | 3 / IP | 15 min |
+| `POST /auth/forgot-password` | 5 / IP | 15 min |
+| `POST /auth/reset-password` | 5 / IP | 15 min |
 | `POST /attendance/checkin/:groupId` (público) | 30 / IP | 1 min |
 
-Headers `RateLimit-*` activados (`standardHeaders: true`).
+Headers `RateLimit-*` activados (`standardHeaders: true`). Al exceder el límite se responde `429 TOO_MANY_REQUESTS`.
 
 ## Endpoints
 
@@ -68,6 +75,20 @@ Headers `RateLimit-*` activados (`standardHeaders: true`).
 | POST   | `/auth/refresh`       | no        | Rota la sesión con el refresh token |
 | POST   | `/auth/logout`        | no        | Limpia cookies |
 | GET    | `/auth/me`            | sí        | Usuario autenticado actual |
+| PUT    | `/auth/profile`       | sí        | Actualizar perfil propio (firstName, lastName, phone, profileImage) |
+| POST   | `/auth/forgot-password` | no      | Solicita enlace de restablecimiento por email |
+| POST   | `/auth/reset-password`  | no      | Restablece contraseña con token (`token`, `newPassword`) |
+
+`POST /auth/forgot-password` body:
+```json
+{ "email": "usuario@correo.com" }
+```
+Respuesta genérica (200) en ambos casos para no revelar qué emails existen.
+
+`POST /auth/reset-password` body:
+```json
+{ "token": "jwt-token-1h", "newPassword": "NuevaClave1" }
+```
 
 `POST /auth/login` body:
 ```json

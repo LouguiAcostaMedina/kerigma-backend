@@ -42,6 +42,7 @@ export interface BibleStudentAttributes {
   updatedBy: string | null;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export type BibleStudentCreationAttributes = Optional<
@@ -78,6 +79,7 @@ export type BibleStudentCreationAttributes = Optional<
   | 'updatedBy'
   | 'createdAt'
   | 'updatedAt'
+  | 'deletedAt'
 >;
 
 export class BibleStudent
@@ -120,6 +122,7 @@ export class BibleStudent
   public updatedBy!: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  public readonly deletedAt!: Date | null;
 
   public group?: Group;
   public mentor?: User | null;
@@ -304,11 +307,16 @@ export default function defineBibleStudent(sequelize: Sequelize): typeof BibleSt
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
+      deletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       sequelize,
       tableName: 'BibleStudents',
       timestamps: true,
+      paranoid: true,
       indexes: [
         { fields: ['groupId'] },
         { fields: ['disciplePairId'] },

@@ -1,14 +1,10 @@
-import { Op } from 'sequelize';
 import { db, type Group } from '../models';
 import type {
-  AssignTeachersInput,
-  CreateDisciplePairInput,
   CreateGroupInput,
   UpdateGroupInput,
 } from '../schemas/group.schema';
-import { NotFoundError, ValidationError } from '../utils/errors';
+import { NotFoundError } from '../utils/errors';
 import type { User } from '../models/User.model';
-import type { DisciplePair } from '../models/DisciplePair.model';
 
 const USER_ATTRIBUTES = ['id', 'firstName', 'lastName', 'email'];
 
@@ -209,124 +205,3 @@ export async function updateGroup(
   return getGroup(churchId, groupId);
 }
 
-export async function assignTeachers(
-  churchId: string,
-  groupId: string,
-  actorId: string,
-  input: AssignTeachersInput,
-): Promise<GroupSummary> {
-  const group = await db.Group.findOne({ where: { id: groupId, churchId } });
-  if (!group) {
-    throw new NotFoundError('Grupo no encontrado');
-  }
-
-  const teacherIds = [input.mainTeacherId, input.associateTeacherId].filter(
-    (id): id is string => typeof id === 'string',
-  );
-
-  if (teacherIds.length > 0) {
-    const teachers = await db.User.findAll({
-      where: { id: { [Op.in]: teacherIds }, churchId },
-    });
-    if (teachers.length !== teacherIds.length) {
-      throw new NotFoundError('Uno o más maestros no pertenecen a su iglesia');
-    }
-  }
-
-  await group.update({
-    mainTeacherId: input.mainTeacherId,
-    associateTeacherId: input.associateTeacherId,
-    updatedBy: actorId,
-  });
-
-  return getGroup(churchId, groupId);
-}
-
-export async function createDisciplePair(
-  churchId: string,
-  groupId: string,
-  actorId: string,
-  input: CreateDisciplePairInput,
-): Promise<DisciplePair> {
-  if (input.member1Id === input.member2Id) {
-    throw new ValidationError('El discipulador y el discípulo deben ser miembros distintos');
-  }
-
-  const group = await db.Group.findOne({ where: { id: groupId, churchId } });
-  if (!group) {
-    throw new NotFoundError('Grupo no encontrado');
-  }
-
-  const members = await db.Member.findAll({
-    where: { id: { [Op.in]: [input.member1Id, input.member2Id] }, groupId },
-  });
-  if (members.length !== 2) {
-    throw new ValidationError('Ambos miembros deben pertenecer al grupo');
-  }
-
-  const existing = await db.DisciplePair.findOne({
-    where: {
-      groupId,
-      status: 'active',
-      [Op.or]: [
-        { member1Id: input.member1Id, member2Id: input.member2Id },
-        { member1Id: input.member2Id, member2Id: input.member1Id },
-      ],
-    },
-  });
-  if (existing) {
-    throw new ValidationError('Ya existe una pareja de discipulado activa entre estos miembros');
-  }
-
-  const pair = await db.DisciplePair.create({
-    churchId,
-    groupId,
-    member1Id: input.member1Id,
-    member2Id: input.member2Id,
-    status: input.status ?? 'active',
-    startedAt: input.startedAt ?? new Date().toISOString().slice(0, 10),
-    meetingSchedule: input.meetingSchedule ?? null,
-    notes: input.notes ?? null,
-    createdBy: actorId,
-    updatedBy: actorId,
-  });
-
-  return pair.reload({
-    include: [
-      { model: db.Member, as: 'member1', attributes: ['id', 'firstName', 'lastName'] },
-      { model: db.Member, as: 'member2', attributes: ['id', 'firstName', 'lastName'] },
-    ],
-  });
-}
-
-export async function listDisciplePairs(churchId: string, groupId: string): Promise<DisciplePair[]> {
-  const group = await db.Group.findOne({ where: { id: groupId, churchId } });
-  if (!group) {
-    throw new NotFoundError('Grupo no encontrado');
-  }
-
-  return db.DisciplePair.findAll({
-    where: { groupId, churchId },
-    include: [
-      { model: db.Member, as: 'member1', attributes: ['id', 'firstName', 'lastName', 'status'] },
-      { model: db.Member, as: 'member2', attributes: ['id', 'firstName', 'lastName', 'status'] },
-    ],
-    order: [['createdAt', 'DESC']],
-  });
-}
-
-export async function listDisciplePairsAnyChurch(groupId: string): Promise<DisciplePair[]> {
-  const group = await db.Group.findOne({ where: { id: groupId } });
-  if (!group) {
-    throw new NotFoundError('Grupo no encontrado');
-  }
-
-  return db.DisciplePair.findAll({
-    where: { groupId },
-    include: [
-      { model: db.Member, as: 'member1', attributes: ['id', 'firstName', 'lastName', 'status'] },
-      { model: db.Member, as: 'member2', attributes: ['id', 'firstName', 'lastName', 'status'] },
-    ],
-    order: [['createdAt', 'DESC']],
-  });
-}

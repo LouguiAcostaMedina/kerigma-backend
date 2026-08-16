@@ -160,6 +160,7 @@ export default function defineQuarterlyGoal(sequelize: Sequelize): typeof Quarte
         { fields: ['quarterId'] },
         { fields: ['groupId'] },
         { fields: ['churchId', 'status'] },
+        { fields: ['churchId', 'quarterId'] },
       ],
     },
   );

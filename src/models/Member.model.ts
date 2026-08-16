@@ -264,6 +264,7 @@ export default function defineMember(sequelize: Sequelize): typeof Member {
         { name: 'idx_members_email', unique: true, fields: ['email'] },
         { fields: ['status'] },
         { fields: ['spiritualStatus'] },
+        { fields: ['groupId', 'isActive'] },
       ],
     },
   );

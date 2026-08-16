@@ -5,7 +5,6 @@ import type { BibleLessonProgress } from '../models/BibleLessonProgress.model';
 import type {
   CreateStudentInput,
   ListStudentsQuery,
-  UpdateLessonsInput,
   UpdateStudentInput,
 } from '../schemas/student.schema';
 import { BIBLE_LESSON_TITLES, TOTAL_BIBLE_LESSONS } from '../constants/lessons';
@@ -196,29 +195,6 @@ export async function getStudent(churchId: string, studentId: string): Promise<S
   return toStudentSummary(student);
 }
 
-export async function listStudentsByGroup(churchId: string, groupId: string): Promise<StudentSummary[]> {
-  const group = await db.Group.findOne({ where: { id: groupId, churchId } });
-  if (!group) {
-    throw new NotFoundError('Grupo no encontrado');
-  }
-
-  const students = await db.BibleStudent.findAll({
-    where: { groupId, churchId },
-    include: [
-      { model: db.Group, as: 'group', attributes: ['id', 'name'] },
-      { model: db.DisciplePair, as: 'disciplePair', attributes: ['id'] },
-      { model: db.User, as: 'mentor', attributes: ['id', 'firstName', 'lastName', 'email'] },
-      { model: db.BibleLessonProgress, as: 'lessons', separate: true },
-    ],
-    order: [
-      ['lastName', 'ASC'],
-      ['firstName', 'ASC'],
-    ],
-  });
-
-  return students.map((student) => toStudentSummary(student));
-}
-
 export async function updateStudent(
   churchId: string,
   studentId: string,
@@ -338,41 +314,6 @@ export async function listStudents(
   return { students, total: count };
 }
 
-export async function getStudentsStats(scopeChurchId: string | null) {
-  const where: WhereOptions = scopeChurchId ? { churchId: scopeChurchId } : {};
-  const [total, active, enrolled, graduated, dropped, suspended, completed, baptized, byStatus] =
-    await Promise.all([
-      db.BibleStudent.count({ where }),
-      db.BibleStudent.count({ where: { ...where, status: 'active' } }),
-      db.BibleStudent.count({ where: { ...where, status: 'enrolled' } }),
-      db.BibleStudent.count({ where: { ...where, status: 'graduated' } }),
-      db.BibleStudent.count({ where: { ...where, status: 'dropped' } }),
-      db.BibleStudent.count({ where: { ...where, status: 'suspended' } }),
-      db.BibleStudent.count({ where: { ...where, status: 'completed' } }),
-      db.BibleStudent.count({ where: { ...where, baptized: true } }),
-      db.BibleStudent.findAll({
-        attributes: ['status', [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count']],
-        where,
-        group: ['status'],
-        raw: true,
-      }),
-    ]);
-
-  return {
-    total,
-    active,
-    enrolled,
-    graduated,
-    dropped,
-    suspended,
-    completed,
-    baptized,
-    byStatus: Object.fromEntries(
-      (byStatus as unknown as Array<{ status: string; count: string }>).map((r) => [r.status, Number(r.count)]),
-    ),
-  };
-}
-
 export async function deleteStudent(scopeChurchId: string | null, studentId: string): Promise<void> {
   const where: WhereOptions = { id: studentId };
   if (scopeChurchId) {
@@ -444,73 +385,3 @@ export async function exportStudentsToExcel(
   }));
 }
 
-export async function updateStudentLessons(
-  churchId: string,
-  studentId: string,
-  actorId: string,
-  input: UpdateLessonsInput,
-): Promise<StudentSummary> {
-  const student = await db.BibleStudent.findOne({ where: { id: studentId, churchId } });
-  if (!student) {
-    throw new NotFoundError('Estudiante no encontrado');
-  }
-
-  await db.sequelize.transaction(async (transaction) => {
-    for (const item of input.lessons) {
-      const existing = await db.BibleLessonProgress.findOne({
-        where: { bibleStudentId: studentId, lessonNumber: item.lessonNumber },
-        transaction,
-      });
-
-      const isCompleted = item.isCompleted ?? existing?.isCompleted ?? false;
-
-      if (existing) {
-        await existing.update(
-          {
-            lessonTitle: item.lessonTitle ?? existing.lessonTitle ?? lessonTitleFor(item.lessonNumber),
-            isCompleted,
-            completedAt: isCompleted ? (existing.completedAt ?? new Date()) : null,
-            score: item.score !== undefined ? (item.score === null ? null : String(item.score)) : existing.score,
-            notes: item.notes !== undefined ? item.notes : existing.notes,
-            completedBy: isCompleted ? actorId : null,
-            updatedBy: actorId,
-          },
-          { transaction },
-        );
-      } else {
-        await db.BibleLessonProgress.create(
-          {
-            churchId,
-            bibleStudentId: studentId,
-            lessonNumber: item.lessonNumber,
-            lessonTitle: item.lessonTitle ?? lessonTitleFor(item.lessonNumber),
-            isCompleted,
-            completedAt: isCompleted ? new Date() : null,
-            score: item.score !== undefined && item.score !== null ? String(item.score) : null,
-            notes: item.notes ?? null,
-            completedBy: isCompleted ? actorId : null,
-            createdBy: actorId,
-            updatedBy: actorId,
-          },
-          { transaction },
-        );
-      }
-    }
-
-    const completedCount = await db.BibleLessonProgress.count({
-      where: { bibleStudentId: studentId, isCompleted: true },
-      transaction,
-    });
-
-    await student.update(
-      {
-        completedLessons: completedCount,
-        totalLessons: TOTAL_BIBLE_LESSONS,
-        updatedBy: actorId,
-      },
-      { transaction },
-    );
-  });
-
-  return getStudent(churchId, studentId);
-}

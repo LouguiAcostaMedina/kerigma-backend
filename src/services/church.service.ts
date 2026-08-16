@@ -1,11 +1,12 @@
-import { col, fn, Op, type WhereOptions } from 'sequelize';
+import { Op, QueryTypes, type WhereOptions } from 'sequelize';
 import { db, type Church } from '../models';
 import type {
   CreateChurchInput,
   ListChurchesQuery,
+  NearbyChurchesQuery,
   UpdateChurchInput,
 } from '../schemas/church.schema';
-import { NotFoundError, ValidationError } from '../utils/errors';
+import { NotFoundError } from '../utils/errors';
 
 export interface PublicChurch {
   id: string;
@@ -27,6 +28,8 @@ export interface ChurchSummary {
   pastor: string | null;
   pastorPhone: string | null;
   pastorEmail: string | null;
+  pastorId: string | null;
+  leaderId: string | null;
   capacity: number | null;
   status: Church['status'];
   foundedDate: string | null;
@@ -67,6 +70,8 @@ function toChurchSummary(church: Church): ChurchSummary {
     pastor: church.pastor,
     pastorPhone: church.pastorPhone,
     pastorEmail: church.pastorEmail,
+    pastorId: church.pastorId,
+    leaderId: church.leaderId,
     capacity: church.capacity,
     status: church.status,
     foundedDate: church.foundedDate,
@@ -181,6 +186,8 @@ export async function createChurch(actorId: string, input: CreateChurchInput): P
     pastor: input.pastor ?? null,
     pastorPhone: input.pastorPhone ?? null,
     pastorEmail: input.pastorEmail ?? null,
+    pastorId: input.pastorId ?? null,
+    leaderId: input.leaderId ?? null,
     capacity: input.capacity ?? null,
     facilities: input.facilities ?? null,
     services: input.services ?? null,
@@ -225,6 +232,8 @@ export async function updateChurch(
     pastor: input.pastor !== undefined ? input.pastor : church.pastor,
     pastorPhone: input.pastorPhone !== undefined ? input.pastorPhone : church.pastorPhone,
     pastorEmail: input.pastorEmail !== undefined ? input.pastorEmail : church.pastorEmail,
+    pastorId: input.pastorId !== undefined ? input.pastorId : church.pastorId,
+    leaderId: input.leaderId !== undefined ? input.leaderId : church.leaderId,
     capacity: input.capacity !== undefined ? input.capacity : church.capacity,
     facilities: input.facilities !== undefined ? input.facilities : church.facilities,
     services: input.services !== undefined ? input.services : church.services,
@@ -248,177 +257,66 @@ export async function deleteChurch(churchId: string | null, id: string): Promise
   await church.destroy();
 }
 
-export async function deleteMultipleChurches(churchId: string | null, ids: string[]): Promise<void> {
-  const where: Record<string, unknown> = { id: { [Op.in]: ids } };
-  if (churchId) {
-    where.id = churchId;
-  }
-  await db.Church.destroy({ where });
+export interface NearbyChurchResult extends ChurchSummary {
+  distanceKm: number;
 }
 
-export async function updateChurchStatus(
-  churchId: string | null,
-  id: string,
-  actorId: string,
-  status: Church['status'],
-): Promise<ChurchSummary> {
-  const church = await db.Church.findByPk(id);
-  if (!church) {
-    throw new NotFoundError('Iglesia no encontrada');
-  }
-  if (churchId && church.id !== churchId) {
-    throw new NotFoundError('Iglesia no encontrada');
+const HAVERSINE_SQL = `
+  6371 * 2 * ASIN(
+    SQRT(
+      POWER(SIN((:latitude - CAST("latitude" AS DOUBLE PRECISION)) * PI() / 360), 2) +
+      COS(:latitude * PI() / 180) *
+      COS(CAST("latitude" AS DOUBLE PRECISION) * PI() / 180) *
+      POWER(SIN((:longitude - CAST("longitude" AS DOUBLE PRECISION)) * PI() / 360), 2)
+    )
+  )
+`;
+
+interface NearbyRow {
+  id: string;
+  distanceKm: number;
+}
+
+/**
+ * Iglesias ordenadas por distancia (Haversine) desde un punto, dentro de un radio en km.
+ * Requiere que las iglesias tengan latitude/longitude definidas.
+ */
+export async function listNearbyChurches(query: NearbyChurchesQuery): Promise<NearbyChurchResult[]> {
+  const { latitude, longitude, radiusKm, limit } = query;
+
+  const sql = `
+    SELECT "id", ${HAVERSINE_SQL} AS "distanceKm"
+    FROM "Churches"
+    WHERE "latitude" IS NOT NULL
+      AND "longitude" IS NOT NULL
+      AND "deletedAt" IS NULL
+      AND ${HAVERSINE_SQL} <= :radiusKm
+    ORDER BY "distanceKm" ASC
+    LIMIT :limit;
+  `;
+
+  const rows = (await db.sequelize.query(sql, {
+    replacements: { latitude, longitude, radiusKm, limit },
+    type: QueryTypes.SELECT,
+  })) as NearbyRow[];
+
+  if (rows.length === 0) {
+    return [];
   }
 
-  await church.update({
-    status,
-    isActive: status === 'active',
-    updatedBy: actorId,
+  const churches = await db.Church.findAll({
+    where: { id: rows.map((row) => row.id) },
+    include: SEPARATE_INCLUDES,
   });
+  const byId = new Map(churches.map((church) => [church.id, church]));
 
-  return getChurch(churchId, id);
-}
-
-export async function getChurchesStats(churchId: string | null) {
-  const where: WhereOptions = {};
-  if (churchId) {
-    where.id = churchId;
-  }
-
-  const [total, active, construction, planning, inactive, byStatus, totalMembers, totalGroups, totalStudents] =
-    await Promise.all([
-      db.Church.count({ where }),
-      db.Church.count({ where: { ...where, status: 'active' } }),
-      db.Church.count({ where: { ...where, status: 'construction' } }),
-      db.Church.count({ where: { ...where, status: 'planning' } }),
-      db.Church.count({ where: { ...where, status: 'inactive' } }),
-      db.Church.findAll({
-        attributes: ['status', [fn('COUNT', col('id')), 'count']],
-        where,
-        group: ['status'],
-        raw: true,
-      }),
-      db.User.count({ where: churchId ? { churchId } : {} }),
-      db.Group.count({ where: churchId ? { churchId } : {} }),
-      db.BibleStudent.count({ where: churchId ? { churchId } : {} }),
-    ]);
-
-  return {
-    total,
-    active,
-    construction,
-    planning,
-    inactive,
-    totalMembers,
-    totalGroups,
-    totalStudents,
-    byStatus: Object.fromEntries(
-      (byStatus as unknown as Array<{ status: string; count: string }>).map((r) => [r.status, Number(r.count)]),
-    ),
-  };
-}
-
-export async function checkChurchAccess(churchId: string | null, id: string): Promise<void> {
-  const church = await db.Church.findByPk(id);
-  if (!church) {
-    throw new NotFoundError('Iglesia no encontrada');
-  }
-  if (churchId && church.id !== churchId) {
-    throw new ValidationError('La iglesia no pertenece a su ámbito de acceso');
-  }
-}
-
-export async function getChurchStatistics(churchId: string | null, id: string) {
-  await checkChurchAccess(churchId, id);
-
-  const groups = await db.Group.findAll({ where: { churchId: id }, attributes: ['id'] });
-  const groupIds = groups.map((g) => g.id);
-  const memberWhere: WhereOptions = groupIds.length > 0 ? { groupId: { [Op.in]: groupIds } } : { groupId: null };
-
-  const [members, activeMembers, students, activeStudents, graduatedStudents, baptizedStudents, groupsCount] =
-    await Promise.all([
-      db.Member.count({ where: memberWhere }),
-      db.Member.count({ where: { ...memberWhere, isActive: true } }),
-      db.BibleStudent.count({ where: { churchId: id } }),
-      db.BibleStudent.count({ where: { churchId: id, isActive: true } }),
-      db.BibleStudent.count({ where: { churchId: id, status: 'graduated' } }),
-      db.BibleStudent.count({ where: { churchId: id, baptized: true } }),
-      db.Group.count({ where: { churchId: id } }),
-    ]);
-
-  return {
-    churchId: id,
-    groups: groupsCount,
-    members,
-    activeMembers,
-    students,
-    activeStudents,
-    graduatedStudents,
-    baptizedStudents,
-  };
-}
-
-export async function exportChurchData(
-  churchId: string | null,
-  id: string,
-  exportType: string,
-): Promise<Array<{ name: string; rows: Record<string, unknown>[] }>> {
-  await checkChurchAccess(churchId, id);
-
-  const sheets: Array<{ name: string; rows: Record<string, unknown>[] }> = [];
-
-  const groups = await db.Group.findAll({ where: { churchId: id }, order: [['name', 'ASC']] });
-  const groupMap = new Map(groups.map((g) => [g.id, g.name]));
-  const groupIds = groups.map((g) => g.id);
-  const memberWhere: WhereOptions = groupIds.length > 0 ? { groupId: { [Op.in]: groupIds } } : { groupId: null };
-
-  if (exportType === 'complete' || exportType === 'groups') {
-    sheets.push({
-      name: 'Grupos',
-      rows: groups.map((g) => ({
-        ID: g.id,
-        Nombre: g.name,
-        Tipo: g.type,
-        Categoría: g.category,
-        'Día de reunión': g.meetingDay,
-        'Hora de reunión': g.meetingTime,
-        Estado: g.status,
-      })),
-    });
-  }
-
-  if (exportType === 'complete' || exportType === 'members') {
-    const members = await db.Member.findAll({ where: memberWhere, order: [['lastName', 'ASC']] });
-    sheets.push({
-      name: 'Miembros',
-      rows: members.map((m) => ({
-        ID: m.id,
-        Nombre: m.firstName,
-        Apellido: m.lastName,
-        Email: m.email ?? '',
-        Teléfono: m.phone ?? '',
-        Grupo: groupMap.get(m.groupId) ?? '',
-        Estado: m.status,
-      })),
-    });
-  }
-
-  if (exportType === 'complete' || exportType === 'students') {
-    const students = await db.BibleStudent.findAll({ where: { churchId: id }, order: [['lastName', 'ASC']] });
-    sheets.push({
-      name: 'Estudiantes',
-      rows: students.map((s) => ({
-        ID: s.id,
-        Nombre: s.firstName,
-        Apellido: s.lastName,
-        Email: s.email ?? '',
-        Grupo: groupMap.get(s.groupId) ?? '',
-        Programa: s.program,
-        Nivel: s.level,
-        Estado: s.status,
-      })),
-    });
-  }
-
-  return sheets;
+  return rows
+    .map((row) => {
+      const church = byId.get(row.id);
+      if (!church) {
+        return null;
+      }
+      return { ...toChurchSummary(church), distanceKm: Math.round(row.distanceKm * 1000) / 1000 };
+    })
+    .filter((result): result is NearbyChurchResult => result !== null);
 }

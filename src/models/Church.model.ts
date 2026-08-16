@@ -21,6 +21,8 @@ export interface ChurchAttributes {
   pastor: string | null;
   pastorPhone: string | null;
   pastorEmail: string | null;
+  pastorId: string | null;
+  leaderId: string | null;
   capacity: number | null;
   facilities: Record<string, unknown> | null;
   services: Record<string, unknown> | null;
@@ -49,6 +51,8 @@ export type ChurchCreationAttributes = Optional<
   | 'pastor'
   | 'pastorPhone'
   | 'pastorEmail'
+  | 'pastorId'
+  | 'leaderId'
   | 'capacity'
   | 'facilities'
   | 'services'
@@ -80,6 +84,8 @@ export class Church extends Model<ChurchAttributes, ChurchCreationAttributes> im
   public pastor!: string | null;
   public pastorPhone!: string | null;
   public pastorEmail!: string | null;
+  public pastorId!: string | null;
+  public leaderId!: string | null;
   public capacity!: number | null;
   public facilities!: Record<string, unknown> | null;
   public services!: Record<string, unknown> | null;
@@ -96,6 +102,8 @@ export class Church extends Model<ChurchAttributes, ChurchCreationAttributes> im
   public members?: User[];
   public groups?: Group[];
   public bibleStudents?: BibleStudent[];
+  public pastorUser?: User;
+  public leaderUser?: User;
 }
 
 export default function defineChurch(sequelize: Sequelize): typeof Church {
@@ -170,6 +178,26 @@ export default function defineChurch(sequelize: Sequelize): typeof Church {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
+      pastorId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
+      leaderId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
       capacity: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -234,6 +262,7 @@ export default function defineChurch(sequelize: Sequelize): typeof Church {
         { name: 'idx_churches_name_city', unique: true, fields: ['name', 'city'] },
         { name: 'idx_churches_email', unique: true, fields: ['email'] },
         { name: 'idx_churches_status', fields: ['status'] },
+        { name: 'idx_churches_city_state', fields: ['city', 'state'] },
       ],
     },
   );

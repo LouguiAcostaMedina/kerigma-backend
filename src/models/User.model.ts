@@ -15,6 +15,17 @@ export interface UserAttributes {
   phone: string | null;
   profileImage: string | null;
   churchId: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  dateOfBirth: string | null;
+  gender: string | null;
+  maritalStatus: string | null;
+  occupation: string | null;
+  emergencyContact: string | null;
+  emergencyPhone: string | null;
+  notes: string | null;
   isActive: boolean;
   isApproved: boolean;
   lastLogin: Date | null;
@@ -34,6 +45,17 @@ export type UserCreationAttributes = Optional<
   | 'phone'
   | 'profileImage'
   | 'churchId'
+  | 'address'
+  | 'city'
+  | 'state'
+  | 'zipCode'
+  | 'dateOfBirth'
+  | 'gender'
+  | 'maritalStatus'
+  | 'occupation'
+  | 'emergencyContact'
+  | 'emergencyPhone'
+  | 'notes'
   | 'isActive'
   | 'isApproved'
   | 'lastLogin'
@@ -56,6 +78,17 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   public phone!: string | null;
   public profileImage!: string | null;
   public churchId!: string | null;
+  public address!: string | null;
+  public city!: string | null;
+  public state!: string | null;
+  public zipCode!: string | null;
+  public dateOfBirth!: string | null;
+  public gender!: string | null;
+  public maritalStatus!: string | null;
+  public occupation!: string | null;
+  public emergencyContact!: string | null;
+  public emergencyPhone!: string | null;
+  public notes!: string | null;
   public isActive!: boolean;
   public isApproved!: boolean;
   public lastLogin!: Date | null;
@@ -142,6 +175,50 @@ export default function defineUser(sequelize: Sequelize): typeof User {
       },
       churchId: {
         type: DataTypes.UUID,
+        allowNull: true,
+      },
+      address: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      city: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      state: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      zipCode: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+      },
+      dateOfBirth: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      gender: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+      },
+      maritalStatus: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+      },
+      occupation: {
+        type: DataTypes.STRING(150),
+        allowNull: true,
+      },
+      emergencyContact: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
+      },
+      emergencyPhone: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+      },
+      notes: {
+        type: DataTypes.TEXT,
         allowNull: true,
       },
       isActive: {

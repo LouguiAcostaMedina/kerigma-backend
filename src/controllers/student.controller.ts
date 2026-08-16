@@ -3,7 +3,6 @@ import type { AuthUser } from '../types/auth';
 import type {
   CreateStudentInput,
   ListStudentsQuery,
-  UpdateLessonsInput,
   UpdateStudentInput,
 } from '../schemas/student.schema';
 import * as studentService from '../services/student.service';
@@ -50,12 +49,6 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
   res.status(200).json(paginated(students, total, query.page, query.limit));
 }
 
-export async function getStudentsStats(req: Request, res: Response): Promise<void> {
-  const scope = resolveChurchId(req.user!);
-  const stats = await studentService.getStudentsStats(scope.churchId);
-  res.status(200).json(ok(stats));
-}
-
 export async function deleteStudent(req: Request, res: Response): Promise<void> {
   const scope = resolveChurchId(req.user!);
   await studentService.deleteStudent(scope.churchId, req.params.id);
@@ -100,15 +93,6 @@ export async function getStudent(req: Request, res: Response): Promise<void> {
   res.status(200).json(ok(student));
 }
 
-export async function listStudentsByGroup(req: Request, res: Response): Promise<void> {
-  const scope = resolveChurchId(req.user!);
-  if (!scope.churchId) {
-    throw new ForbiddenError('No se pueden listar estudiantes desde el modo global sin especificar iglesia.');
-  }
-  const students = await studentService.listStudentsByGroup(scope.churchId, req.params.groupId);
-  res.status(200).json(ok(students));
-}
-
 export async function updateStudent(req: Request, res: Response): Promise<void> {
   const scope = resolveChurchId(req.user!);
   if (!scope.churchId) {
@@ -116,20 +100,6 @@ export async function updateStudent(req: Request, res: Response): Promise<void> 
   }
   const student = await studentService.updateStudent(scope.churchId, req.params.id, req.user!.id, req.body as UpdateStudentInput);
   res.status(200).json(ok(student, 'Estudiante actualizado exitosamente'));
-}
-
-export async function updateStudentLessons(req: Request, res: Response): Promise<void> {
-  const scope = resolveChurchId(req.user!);
-  if (!scope.churchId) {
-    throw new ForbiddenError('No se pueden actualizar lecciones desde el modo global.');
-  }
-  const student = await studentService.updateStudentLessons(
-    scope.churchId,
-    req.params.id,
-    req.user!.id,
-    req.body as UpdateLessonsInput,
-  );
-  res.status(200).json(ok(student, 'Progreso de lecciones actualizado exitosamente'));
 }
 
 export async function listLessons(_req: Request, res: Response): Promise<void> {

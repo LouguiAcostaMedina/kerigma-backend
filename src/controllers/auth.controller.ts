@@ -116,9 +116,9 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
 }
 
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
-  const { resetToken } = await authService.forgotPassword(req.body as ForgotPasswordInput);
+  await authService.forgotPassword(req.body as ForgotPasswordInput);
   res.status(200).json(
-    ok({ resetToken }, 'Si el email existe, recibirá un enlace para restablecer su contraseña'),
+    ok(null, 'Si el email existe, recibirá un enlace para restablecer su contraseña'),
   );
 }
 

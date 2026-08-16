@@ -1,11 +1,14 @@
 import { z } from 'zod';
+import { toTitleCase } from '../utils/text';
+
+const titleCase = (v: string): string => toTitleCase(v);
 
 const commonChurchFields = {
   name: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(200, 'El nombre es demasiado largo'),
   address: z.string().trim().min(2, 'La dirección es requerida').max(2000, 'La dirección es demasiado larga'),
-  city: z.string().trim().min(1, 'La ciudad es requerida').max(100, 'La ciudad es demasiado larga'),
-  state: z.string().trim().min(1, 'El departamento es requerido').max(100, 'El departamento es demasiado largo'),
-  country: z.string().trim().min(1, 'El país es requerido').max(100, 'El país es demasiado largo').default('Perú'),
+  city: z.string().trim().min(1, 'La ciudad es requerida').max(100, 'La ciudad es demasiado larga').transform(titleCase),
+  state: z.string().trim().min(1, 'El departamento es requerido').max(100, 'El departamento es demasiado largo').transform(titleCase),
+  country: z.string().trim().min(1, 'El país es requerido').max(100, 'El país es demasiado largo').default('Perú').transform(titleCase),
   zipCode: z.string().trim().max(20, 'El código postal es demasiado largo').nullable().optional(),
   latitude: z.string().trim().max(20).nullable().optional(),
   longitude: z.string().trim().max(20).nullable().optional(),
@@ -16,6 +19,8 @@ const commonChurchFields = {
   pastor: z.string().trim().max(200, 'El nombre del pastor es demasiado largo').nullable().optional(),
   pastorPhone: z.string().trim().max(20, 'El teléfono del pastor es demasiado largo').nullable().optional(),
   pastorEmail: z.string().trim().toLowerCase().email('El email del pastor no es válido').max(255).nullable().optional(),
+  pastorId: z.string().uuid('El identificador del pastor no es válido').nullable().optional(),
+  leaderId: z.string().uuid('El identificador del líder no es válido').nullable().optional(),
   capacity: z.number().int().min(1, 'La capacidad debe ser mayor a 0').nullable().optional(),
   facilities: z.record(z.unknown()).nullable().optional(),
   services: z.record(z.unknown()).nullable().optional(),
@@ -29,9 +34,9 @@ export const createChurchSchema = z.object(commonChurchFields);
 export const updateChurchSchema = z.object({
   name: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(200, 'El nombre es demasiado largo').optional(),
   address: z.string().trim().min(2, 'La dirección es requerida').max(2000, 'La dirección es demasiado larga').optional(),
-  city: z.string().trim().min(1, 'La ciudad es requerida').max(100, 'La ciudad es demasiado larga').optional(),
-  state: z.string().trim().min(1, 'El departamento es requerido').max(100, 'El departamento es demasiado largo').optional(),
-  country: z.string().trim().min(1, 'El país es requerido').max(100, 'El país es demasiado largo').optional(),
+  city: z.string().trim().min(1, 'La ciudad es requerida').max(100, 'La ciudad es demasiado larga').transform(titleCase).optional(),
+  state: z.string().trim().min(1, 'El departamento es requerido').max(100, 'El departamento es demasiado largo').transform(titleCase).optional(),
+  country: z.string().trim().min(1, 'El país es requerido').max(100, 'El país es demasiado largo').transform(titleCase).optional(),
   zipCode: z.string().trim().max(20, 'El código postal es demasiado largo').nullable().optional(),
   latitude: z.string().trim().max(20).nullable().optional(),
   longitude: z.string().trim().max(20).nullable().optional(),
@@ -42,6 +47,8 @@ export const updateChurchSchema = z.object({
   pastor: z.string().trim().max(200, 'El nombre del pastor es demasiado largo').nullable().optional(),
   pastorPhone: z.string().trim().max(20, 'El teléfono del pastor es demasiado largo').nullable().optional(),
   pastorEmail: z.string().trim().toLowerCase().email('El email del pastor no es válido').max(255).nullable().optional(),
+  pastorId: z.string().uuid('El identificador del pastor no es válido').nullable().optional(),
+  leaderId: z.string().uuid('El identificador del líder no es válido').nullable().optional(),
   capacity: z.number().int().min(1, 'La capacidad debe ser mayor a 0').nullable().optional(),
   facilities: z.record(z.unknown()).nullable().optional(),
   services: z.record(z.unknown()).nullable().optional(),
@@ -72,14 +79,14 @@ export const listChurchesQuerySchema = z.object({
   ),
 });
 
-export const updateChurchStatusSchema = z.object({
-  status: z.enum(['active', 'construction', 'planning', 'inactive']),
-});
-
-export const bulkDeleteChurchesSchema = z.object({
-  ids: z.array(z.string().uuid('El identificador no es válido')).min(1, 'Debe indicar al menos una iglesia'),
+export const nearbyChurchesQuerySchema = z.object({
+  latitude: z.coerce.number().min(-90).max(90, 'La latitud debe estar entre -90 y 90'),
+  longitude: z.coerce.number().min(-180).max(180, 'La longitud debe estar entre -180 y 180'),
+  radiusKm: z.coerce.number().positive('El radio debe ser mayor a 0').max(500, 'El radio máximo es 500 km').default(25),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
 });
 
 export type CreateChurchInput = z.infer<typeof createChurchSchema>;
 export type UpdateChurchInput = z.infer<typeof updateChurchSchema>;
 export type ListChurchesQuery = z.infer<typeof listChurchesQuerySchema>;
+export type NearbyChurchesQuery = z.infer<typeof nearbyChurchesQuerySchema>;

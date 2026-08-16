@@ -1,7 +1,5 @@
 import type { Request, Response } from 'express';
 import type {
-  AssignTeachersInput,
-  CreateDisciplePairInput,
   CreateGroupInput,
   UpdateGroupInput,
 } from '../schemas/group.schema';
@@ -57,41 +55,3 @@ export async function updateGroup(req: Request, res: Response): Promise<void> {
   res.status(200).json(ok(group, 'Grupo actualizado exitosamente'));
 }
 
-export async function assignTeachers(req: Request, res: Response): Promise<void> {
-  const churchId = resolveChurchId(req);
-  if (!churchId) {
-    throw new ForbiddenError('No se pueden asignar maestros desde el modo global.');
-  }
-  const group = await groupService.assignTeachers(
-    churchId,
-    req.params.id,
-    req.user!.id,
-    req.body as AssignTeachersInput,
-  );
-  res.status(200).json(ok(group, 'Maestros asignados exitosamente'));
-}
-
-export async function createDisciplePair(req: Request, res: Response): Promise<void> {
-  const churchId = resolveChurchId(req);
-  if (!churchId) {
-    throw new ForbiddenError('No se pueden crear parejas desde el modo global.');
-  }
-  const pair = await groupService.createDisciplePair(
-    churchId,
-    req.params.id,
-    req.user!.id,
-    req.body as CreateDisciplePairInput,
-  );
-  res.status(201).json(ok(pair, 'Pareja de discipulado creada exitosamente'));
-}
-
-export async function listDisciplePairs(req: Request, res: Response): Promise<void> {
-  const churchId = resolveChurchId(req);
-  if (!churchId) {
-    const pairs = await groupService.listDisciplePairsAnyChurch(req.params.id);
-    res.status(200).json(ok(pairs));
-    return;
-  }
-  const pairs = await groupService.listDisciplePairs(churchId, req.params.id);
-  res.status(200).json(ok(pairs));
-}

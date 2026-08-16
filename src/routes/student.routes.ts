@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import * as studentController from '../controllers/student.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
-import { validate, validateQuery } from '../middlewares/validate.middleware';
+import { scopeByChurch } from '../middlewares/scopeByChurch';
+import { validate, validateParams, validateQuery } from '../middlewares/validate.middleware';
+import { idParamSchema } from '../schemas/params.schema';
 import {
   bulkDeleteStudentsSchema,
   createStudentSchema,
   listStudentsQuerySchema,
-  updateLessonsSchema,
   updateStudentLevelSchema,
   updateStudentSchema,
   updateStudentStatusSchema,
@@ -16,37 +17,31 @@ import { excelUpload } from '../utils/upload';
 
 const router = Router();
 
-router.get('/', requireAuth, validateQuery(listStudentsQuerySchema), asyncHandler(studentController.listStudents));
-router.get('/stats', requireAuth, asyncHandler(studentController.getStudentsStats));
-router.get('/group/:groupId', requireAuth, asyncHandler(studentController.listStudentsByGroup));
-router.get('/lessons', requireAuth, asyncHandler(studentController.listLessons));
-router.get('/export/excel', requireAuth, asyncHandler(studentController.exportStudentsExcel));
-router.get('/export/pdf', requireAuth, asyncHandler(studentController.exportStudentsExcel));
-router.post('/import/excel', requireAuth, excelUpload.single('file'), asyncHandler(studentController.importStudentsExcel));
-router.post('/export/excel', requireAuth, asyncHandler(studentController.exportStudentsExcel));
+router.get('/', requireAuth, scopeByChurch(), validateQuery(listStudentsQuerySchema), asyncHandler(studentController.listStudents));
+router.get('/lessons', requireAuth, scopeByChurch(), asyncHandler(studentController.listLessons));
+router.post('/import/excel', requireAuth, scopeByChurch(), excelUpload.single('file'), asyncHandler(studentController.importStudentsExcel));
+router.post('/export/excel', requireAuth, scopeByChurch(), asyncHandler(studentController.exportStudentsExcel));
 
-router.post('/', requireAuth, validate(createStudentSchema), asyncHandler(studentController.createStudent));
-router.put(
-  '/:id/lessons',
-  requireAuth,
-  validate(updateLessonsSchema),
-  asyncHandler(studentController.updateStudentLessons),
-);
+router.post('/', requireAuth, scopeByChurch(), validate(createStudentSchema), asyncHandler(studentController.createStudent));
 router.patch(
   '/:id/status',
   requireAuth,
+  scopeByChurch(),
+  validateParams(idParamSchema),
   validate(updateStudentStatusSchema),
   asyncHandler(studentController.updateStudentStatus),
 );
 router.patch(
   '/:id/level',
   requireAuth,
+  scopeByChurch(),
+  validateParams(idParamSchema),
   validate(updateStudentLevelSchema),
   asyncHandler(studentController.updateStudentLevel),
 );
-router.delete('/bulk', requireAuth, validate(bulkDeleteStudentsSchema), asyncHandler(studentController.deleteMultipleStudents));
-router.get('/:id', requireAuth, asyncHandler(studentController.getStudent));
-router.put('/:id', requireAuth, validate(updateStudentSchema), asyncHandler(studentController.updateStudent));
-router.delete('/:id', requireAuth, asyncHandler(studentController.deleteStudent));
+router.delete('/bulk', requireAuth, scopeByChurch(), validate(bulkDeleteStudentsSchema), asyncHandler(studentController.deleteMultipleStudents));
+router.get('/:id', requireAuth, scopeByChurch(), validateParams(idParamSchema), asyncHandler(studentController.getStudent));
+router.put('/:id', requireAuth, scopeByChurch(), validateParams(idParamSchema), validate(updateStudentSchema), asyncHandler(studentController.updateStudent));
+router.delete('/:id', requireAuth, scopeByChurch(), validateParams(idParamSchema), asyncHandler(studentController.deleteStudent));
 
 export default router;

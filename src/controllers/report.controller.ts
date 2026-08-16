@@ -91,28 +91,6 @@ export async function getBibleStudentProgressReport(req: Request, res: Response)
   res.status(200).json(ok(data));
 }
 
-export async function getBaptismConversionReport(req: Request, res: Response): Promise<void> {
-  const data = await reportService.getBaptismConversionReport(actor(req));
-  res.status(200).json(ok(data));
-}
-
-export async function getLeaderPerformanceReport(req: Request, res: Response): Promise<void> {
-  const data = await reportService.getLeaderPerformanceReport(actor(req));
-  res.status(200).json(ok(data));
-}
-
-export async function getComparativeReport(req: Request, res: Response): Promise<void> {
-  const params = (req.body as Record<string, unknown>) ?? {};
-  const result = await reportService.getComparativeReport(actor(req), params);
-  res.status(200).json(ok(result));
-}
-
-export async function getChurchComparativeReport(req: Request, res: Response): Promise<void> {
-  const params = (req.body as Record<string, unknown>) ?? {};
-  const result = await reportService.getChurchComparativeReport(actor(req), params);
-  res.status(200).json(ok(result));
-}
-
 export async function exportReport(req: Request, res: Response): Promise<void> {
   const params = (req.body as Record<string, unknown>) ?? {};
   const result = await reportService.exportReport(
@@ -168,11 +146,6 @@ export async function getPopularReports(req: Request, res: Response): Promise<vo
   res.status(200).json(ok(reports));
 }
 
-export async function getStatsSummary(req: Request, res: Response): Promise<void> {
-  const summary = await reportService.getStatsSummary(actor(req));
-  res.status(200).json(ok(summary));
-}
-
 export async function shareReport(req: Request, res: Response): Promise<void> {
   const userIds = (req.body as { userIds: string[] }).userIds;
   const report = await reportService.shareReport(actor(req), req.params.id, userIds);
@@ -182,13 +155,4 @@ export async function shareReport(req: Request, res: Response): Promise<void> {
 export async function listSharedReports(req: Request, res: Response): Promise<void> {
   const reports = await reportService.listSharedReports(actor(req));
   res.status(200).json(ok(reports));
-}
-
-export async function getUserReportConfig(_req: Request, res: Response): Promise<void> {
-  res.status(200).json(ok(reportService.getUserReportConfig()));
-}
-
-export async function updateUserReportConfig(req: Request, res: Response): Promise<void> {
-  const config = reportService.updateUserReportConfig((req.body as Record<string, unknown>) ?? {});
-  res.status(200).json(ok(config, 'Configuración actualizada'));
 }
