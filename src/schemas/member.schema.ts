@@ -32,6 +32,7 @@ const commonMemberFields = {
 export const createMemberSchema = z.object({
   ...commonMemberFields,
   groupId: z.string().uuid('El grupo no es válido'),
+  consentGiven: z.boolean().optional().default(false),
 });
 
 export const updateMemberSchema = z.object({

@@ -57,7 +57,7 @@ describe('RBAC en /api/v1/users', () => {
   it('GET /roles está disponible para cualquier usuario autenticado', async () => {
     const res = await request(app).get('/api/v1/users/roles').set('Authorization', authHeader(leader));
     expect(res.status).toBe(200);
-    expect(res.body.data.values).toEqual(['super_admin', 'admin', 'director', 'leader', 'reader']);
+    expect(res.body.data.values).toEqual(['super_admin', 'admin', 'director', 'leader', 'reader', 'tesorero']);
   });
 
   it('GET / bloquea a un leader con 403 (requiere super_admin/admin/director)', async () => {

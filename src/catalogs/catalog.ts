@@ -36,13 +36,14 @@ export function defineCatalog(values: readonly string[], labels: Record<string, 
 
 export const CATALOGS = {
   roles: defineCatalog(
-    ['super_admin', 'admin', 'director', 'leader', 'reader'],
+    ['super_admin', 'admin', 'director', 'leader', 'reader', 'tesorero'],
     {
       super_admin: 'Super Administrador',
       admin: 'Administrador',
       director: 'Director',
       leader: 'Líder',
       reader: 'Lector',
+      tesorero: 'Tesorero',
     },
   ),
 

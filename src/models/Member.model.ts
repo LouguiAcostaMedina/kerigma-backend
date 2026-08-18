@@ -36,6 +36,11 @@ export interface MemberAttributes {
   isActive: boolean;
   notes: string | null;
   tags: string[] | null;
+  consentGiven: boolean;
+  consentDate: Date | null;
+  consentIp: string | null;
+  consentVersion: string | null;
+  dataRetentionStatus: 'active' | 'anonymized' | 'pending_deletion';
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -65,6 +70,11 @@ export type MemberCreationAttributes = Optional<
   | 'isActive'
   | 'notes'
   | 'tags'
+  | 'consentGiven'
+  | 'consentDate'
+  | 'consentIp'
+  | 'consentVersion'
+  | 'dataRetentionStatus'
   | 'createdAt'
   | 'updatedAt'
   | 'deletedAt'
@@ -96,6 +106,11 @@ export class Member extends Model<MemberAttributes, MemberCreationAttributes> im
   public isActive!: boolean;
   public notes!: string | null;
   public tags!: string[] | null;
+  public consentGiven!: boolean;
+  public consentDate!: Date | null;
+  public consentIp!: string | null;
+  public consentVersion!: string | null;
+  public dataRetentionStatus!: 'active' | 'anonymized' | 'pending_deletion';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
   public readonly deletedAt!: Date | null;
@@ -239,6 +254,29 @@ export default function defineMember(sequelize: Sequelize): typeof Member {
         allowNull: true,
         defaultValue: [],
       },
+      consentGiven: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      consentDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      consentIp: {
+        type: DataTypes.STRING(45),
+        allowNull: true,
+      },
+      consentVersion: {
+        type: DataTypes.STRING(10),
+        allowNull: true,
+        defaultValue: '1.0',
+      },
+      dataRetentionStatus: {
+        type: DataTypes.ENUM('active', 'anonymized', 'pending_deletion'),
+        allowNull: false,
+        defaultValue: 'active',
+      },
       createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -265,6 +303,8 @@ export default function defineMember(sequelize: Sequelize): typeof Member {
         { fields: ['status'] },
         { fields: ['spiritualStatus'] },
         { fields: ['groupId', 'isActive'] },
+        { fields: ['consentGiven'] },
+        { fields: ['dataRetentionStatus'] },
       ],
     },
   );

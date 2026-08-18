@@ -40,7 +40,7 @@ describe('catálogo único (catalog.ts)', () => {
 
   it('el catálogo de roles coincide con los roles del sistema', () => {
     const roles = getCatalog('roles')!;
-    expect(roles.values).toEqual(['super_admin', 'admin', 'director', 'leader', 'reader']);
+    expect(roles.values).toEqual(['super_admin', 'admin', 'director', 'leader', 'reader', 'tesorero']);
   });
 
   it('getCatalog devuelve null para catálogos inexistentes', () => {

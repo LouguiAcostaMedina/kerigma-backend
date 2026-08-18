@@ -12,6 +12,14 @@ import defineAttendanceRecord, { AttendanceRecord } from './AttendanceRecord.mod
 import defineQuarterlyGoal, { QuarterlyGoal } from './QuarterlyGoal.model';
 import defineCustomReport, { CustomReport } from './CustomReport.model';
 import defineAuditLog, { AuditLog } from './AuditLog.model';
+import defineFinancialContribution, { FinancialContribution } from './FinancialContribution.model';
+import defineActivity, { Activity } from './Activity.model';
+import defineNotification, { Notification } from './Notification.model';
+import defineAssociation, { Association } from './Association.model';
+import defineDistrict, { District } from './District.model';
+import defineMinistry, { Ministry, MinistryAssignment } from './Ministry.model';
+import definePrayerRequest, { PrayerRequest, PastoralVisit } from './PrayerRequest.model';
+import defineChurchDocument, { ChurchDocument } from './ChurchDocument.model';
 
 const sequelize = createSequelize();
 
@@ -28,6 +36,14 @@ defineAttendanceRecord(sequelize);
 defineQuarterlyGoal(sequelize);
 defineCustomReport(sequelize);
 defineAuditLog(sequelize);
+defineFinancialContribution(sequelize);
+defineActivity(sequelize);
+defineNotification(sequelize);
+defineAssociation(sequelize);
+defineDistrict(sequelize);
+defineMinistry(sequelize);
+definePrayerRequest(sequelize);
+defineChurchDocument(sequelize);
 
 // =============================================
 // ASOCIACIONES
@@ -137,6 +153,18 @@ DisciplePair.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
 User.hasMany(AuditLog, { foreignKey: 'actorUserId', as: 'auditLogs', onDelete: 'CASCADE' });
 AuditLog.belongsTo(User, { foreignKey: 'actorUserId', as: 'actor' });
 
+// Church - FinancialContribution
+Church.hasMany(FinancialContribution, { foreignKey: 'churchId', as: 'financialContributions', onDelete: 'CASCADE' });
+FinancialContribution.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// Member - FinancialContribution
+Member.hasMany(FinancialContribution, { foreignKey: 'memberId', as: 'contributions', onDelete: 'CASCADE' });
+FinancialContribution.belongsTo(Member, { foreignKey: 'memberId', as: 'member' });
+
+// User (recordedBy) - FinancialContribution
+User.hasMany(FinancialContribution, { foreignKey: 'recordedBy', as: 'recordedContributions' });
+FinancialContribution.belongsTo(User, { foreignKey: 'recordedBy', as: 'recordedByUser' });
+
 // Group - AttendanceRecord
 Group.hasMany(AttendanceRecord, { foreignKey: 'groupId', as: 'attendanceRecords', onDelete: 'CASCADE' });
 AttendanceRecord.belongsTo(Group, { foreignKey: 'groupId', as: 'group' });
@@ -165,6 +193,72 @@ QuarterlyGoal.belongsTo(Group, { foreignKey: 'groupId', as: 'group' });
 Church.hasMany(QuarterlyGoal, { foreignKey: 'churchId', as: 'quarterlyGoals', onDelete: 'CASCADE' });
 QuarterlyGoal.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
 
+// Association - District
+Association.hasMany(District, { foreignKey: 'associationId', as: 'districts', onDelete: 'CASCADE' });
+District.belongsTo(Association, { foreignKey: 'associationId', as: 'association' });
+
+// District - Church
+District.hasMany(Church, { foreignKey: 'districtId', as: 'churches', onDelete: 'SET NULL' });
+Church.belongsTo(District, { foreignKey: 'districtId', as: 'district' });
+
+// Association - User (president)
+Association.belongsTo(User, { foreignKey: 'presidentId', as: 'president' });
+
+// District - User (director)
+District.belongsTo(User, { foreignKey: 'directorId', as: 'director' });
+
+// Church - Ministry
+Church.hasMany(Ministry, { foreignKey: 'churchId', as: 'ministries', onDelete: 'CASCADE' });
+Ministry.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// User (leader) - Ministry
+User.hasMany(Ministry, { foreignKey: 'leaderId', as: 'ledMinistries' });
+Ministry.belongsTo(User, { foreignKey: 'leaderId', as: 'leader' });
+
+// Ministry - MinistryAssignment
+Ministry.hasMany(MinistryAssignment, { foreignKey: 'ministryId', as: 'assignments', onDelete: 'CASCADE' });
+MinistryAssignment.belongsTo(Ministry, { foreignKey: 'ministryId', as: 'ministry' });
+
+// Member - MinistryAssignment
+Member.hasMany(MinistryAssignment, { foreignKey: 'memberId', as: 'ministryAssignments', onDelete: 'CASCADE' });
+MinistryAssignment.belongsTo(Member, { foreignKey: 'memberId', as: 'member' });
+
+// Church - PrayerRequest
+Church.hasMany(PrayerRequest, { foreignKey: 'churchId', as: 'prayerRequests', onDelete: 'CASCADE' });
+PrayerRequest.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// Member - PrayerRequest
+Member.hasMany(PrayerRequest, { foreignKey: 'memberId', as: 'prayerRequests' });
+PrayerRequest.belongsTo(Member, { foreignKey: 'memberId', as: 'member' });
+
+// User (assignedTo) - PrayerRequest
+User.hasMany(PrayerRequest, { foreignKey: 'assignedTo', as: 'assignedPrayers' });
+PrayerRequest.belongsTo(User, { foreignKey: 'assignedTo', as: 'assignee' });
+
+// Church - PastoralVisit
+Church.hasMany(PastoralVisit, { foreignKey: 'churchId', as: 'pastoralVisits', onDelete: 'CASCADE' });
+PastoralVisit.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// Member - PastoralVisit
+Member.hasMany(PastoralVisit, { foreignKey: 'memberId', as: 'pastoralVisits' });
+PastoralVisit.belongsTo(Member, { foreignKey: 'memberId', as: 'member' });
+
+// PrayerRequest - PastoralVisit
+PrayerRequest.hasMany(PastoralVisit, { foreignKey: 'prayerRequestId', as: 'visits' });
+PastoralVisit.belongsTo(PrayerRequest, { foreignKey: 'prayerRequestId', as: 'prayerRequest' });
+
+// User (conductedBy) - PastoralVisit
+User.hasMany(PastoralVisit, { foreignKey: 'conductedBy', as: 'conductedVisits' });
+PastoralVisit.belongsTo(User, { foreignKey: 'conductedBy', as: 'conductor' });
+
+// Church - ChurchDocument
+Church.hasMany(ChurchDocument, { foreignKey: 'churchId', as: 'documents', onDelete: 'CASCADE' });
+ChurchDocument.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// User (uploader) - ChurchDocument
+User.hasMany(ChurchDocument, { foreignKey: 'uploadedBy', as: 'uploadedDocuments' });
+ChurchDocument.belongsTo(User, { foreignKey: 'uploadedBy', as: 'uploader' });
+
 export interface DbModels {
   Church: typeof Church;
   User: typeof User;
@@ -179,6 +273,16 @@ export interface DbModels {
   QuarterlyGoal: typeof QuarterlyGoal;
   CustomReport: typeof CustomReport;
   AuditLog: typeof AuditLog;
+  FinancialContribution: typeof FinancialContribution;
+  Activity: typeof Activity;
+  Notification: typeof Notification;
+  Association: typeof Association;
+  District: typeof District;
+  Ministry: typeof Ministry;
+  MinistryAssignment: typeof MinistryAssignment;
+  PrayerRequest: typeof PrayerRequest;
+  PastoralVisit: typeof PastoralVisit;
+  ChurchDocument: typeof ChurchDocument;
   sequelize: typeof sequelize;
 }
 
@@ -196,6 +300,16 @@ export const db: DbModels = {
   QuarterlyGoal,
   CustomReport,
   AuditLog,
+  FinancialContribution,
+  Activity,
+  Notification,
+  Association,
+  District,
+  Ministry,
+  MinistryAssignment,
+  PrayerRequest,
+  PastoralVisit,
+  ChurchDocument,
   sequelize,
 };
 
@@ -215,4 +329,14 @@ export {
   QuarterlyGoal,
   CustomReport,
   AuditLog,
+  FinancialContribution,
+  Activity,
+  Notification,
+  Association,
+  District,
+  Ministry,
+  MinistryAssignment,
+  PrayerRequest,
+  PastoralVisit,
+  ChurchDocument,
 };

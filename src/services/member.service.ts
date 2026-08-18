@@ -36,6 +36,9 @@ export interface MemberSummary {
   isActive: boolean;
   notes: string | null;
   tags: string[] | null;
+  consentGiven: boolean;
+  consentDate: Date | null;
+  dataRetentionStatus: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,6 +78,9 @@ function toMemberSummary(member: Member): MemberSummary {
     isActive: member.isActive,
     notes: member.notes,
     tags: member.tags,
+    consentGiven: member.consentGiven,
+    consentDate: member.consentDate,
+    dataRetentionStatus: member.dataRetentionStatus,
     createdAt: member.createdAt,
     updatedAt: member.updatedAt,
   };
@@ -193,6 +199,9 @@ export async function createMember(
     isActive: true,
     notes: input.notes ?? null,
     tags: input.tags ?? [],
+    consentGiven: input.consentGiven ?? false,
+    consentDate: input.consentGiven ? new Date() : null,
+    dataRetentionStatus: 'active',
   });
 
   return getMember(churchId, member.id);

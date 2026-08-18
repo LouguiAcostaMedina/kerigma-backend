@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ForbiddenError, UnauthorizedError } from '../utils/errors';
 
-type Role = 'super_admin' | 'admin' | 'director' | 'leader' | 'reader';
+type Role = 'super_admin' | 'admin' | 'director' | 'leader' | 'reader' | 'tesorero';
 
 /**
  * Middleware que exige que el usuario autenticado tenga al menos uno de los roles dados.
@@ -51,6 +51,13 @@ const ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     'students.update',
   ],
   reader: ['members.read', 'groups.read', 'students.read'],
+  tesorero: [
+    'members.read',
+    'financial.read',
+    'financial.create',
+    'financial.delete',
+    'financial.reports',
+  ],
 };
 
 function permissionMatches(permissions: readonly string[], required: string): boolean {

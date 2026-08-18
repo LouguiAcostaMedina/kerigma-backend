@@ -10,16 +10,26 @@ import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import { audit } from './middlewares/audit.middleware';
 import { sanitizeRequest } from './middlewares/sanitize.middleware';
 import attendanceRoutes from './routes/attendance.routes';
+import activityRoutes from './routes/activity.routes';
+import notificationRoutes from './routes/notification.routes';
+import auditRoutes from './routes/audit.routes';
 import authRoutes from './routes/auth.routes';
 import bulkImportRoutes from './routes/bulkImport.routes';
 import catalogRoutes from './routes/catalog.routes';
 import churchRoutes from './routes/church.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import dataProtectionRoutes from './routes/dataProtection.routes';
+import financialRoutes from './routes/financial.routes';
 import groupRoutes from './routes/group.routes';
 import memberRoutes from './routes/member.routes';
 import reportRoutes from './routes/report.routes';
 import studentRoutes from './routes/student.routes';
 import userRoutes from './routes/user.routes';
+import hierarchyRoutes from './routes/hierarchy.routes';
+import ministryRoutes from './routes/ministry.routes';
+import pastoralCareRoutes from './routes/pastoralCare.routes';
+import documentRoutes from './routes/document.routes';
+import baptismPipelineRoutes from './routes/baptismPipeline.routes';
 import logger from './utils/logger';
 
 export function createApp(): Express {
@@ -96,10 +106,20 @@ export function createApp(): Express {
   app.use(`${basePath}/import`, bulkImportRoutes);
   app.use(`${basePath}/groups`, auditWritable, groupRoutes);
   app.use(`${basePath}/members`, auditWritable, memberRoutes);
+  app.use(`${basePath}/data-protection`, dataProtectionRoutes);
+  app.use(`${basePath}/financial-contributions`, auditWritable, financialRoutes);
   app.use(`${basePath}/students`, auditWritable, studentRoutes);
   app.use(`${basePath}/reports`, auditWritable, reportRoutes);
   app.use(`${basePath}/attendance`, auditWritable, attendanceRoutes);
+  app.use(`${basePath}/activities`, auditWritable, activityRoutes);
+  app.use(`${basePath}/notifications`, auditWritable, notificationRoutes);
+  app.use(`${basePath}/hierarchy`, auditWritable, hierarchyRoutes);
+  app.use(`${basePath}/ministries`, auditWritable, ministryRoutes);
+  app.use(`${basePath}/pastoral-care`, auditWritable, pastoralCareRoutes);
+  app.use(`${basePath}/documents`, auditWritable, documentRoutes);
+  app.use(`${basePath}/baptism-pipeline`, baptismPipelineRoutes);
   app.use(`${basePath}/dashboard`, dashboardRoutes);
+  app.use(`${basePath}/audit-logs`, auditRoutes);
   app.use(`${basePath}/users`, auditWritable, userRoutes);
 
   app.get('/health', (_req: Request, res: Response): void => {
