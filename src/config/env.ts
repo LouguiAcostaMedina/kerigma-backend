@@ -84,4 +84,9 @@ export const env = {
     lastName: optional('ADMIN_LAST_NAME', 'Sistema'),
     phone: optional('ADMIN_PHONE', ''),
   },
+  demo: {
+    enabled: optional('DEMO_MODE', 'false') === 'true',
+    email: optional('DEMO_EMAIL', 'demo@kerigma.com'),
+    password: optional('DEMO_PASSWORD', 'DemoKerigma2024!'),
+  },
 } as const;

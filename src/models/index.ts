@@ -20,6 +20,9 @@ import defineDistrict, { District } from './District.model';
 import defineMinistry, { Ministry, MinistryAssignment } from './Ministry.model';
 import definePrayerRequest, { PrayerRequest, PastoralVisit } from './PrayerRequest.model';
 import defineChurchDocument, { ChurchDocument } from './ChurchDocument.model';
+import defineFeatureFlag, { FeatureFlag } from './FeatureFlag.model';
+import defineClient, { Client } from './Client.model';
+import definePayment, { Payment } from './Payment.model';
 
 const sequelize = createSequelize();
 
@@ -44,6 +47,9 @@ defineDistrict(sequelize);
 defineMinistry(sequelize);
 definePrayerRequest(sequelize);
 defineChurchDocument(sequelize);
+defineFeatureFlag(sequelize);
+defineClient(sequelize);
+definePayment(sequelize);
 
 // =============================================
 // ASOCIACIONES
@@ -259,6 +265,22 @@ ChurchDocument.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
 User.hasMany(ChurchDocument, { foreignKey: 'uploadedBy', as: 'uploadedDocuments' });
 ChurchDocument.belongsTo(User, { foreignKey: 'uploadedBy', as: 'uploader' });
 
+// Client - Church
+Client.hasMany(Church, { foreignKey: 'clientId', as: 'churches' });
+Church.belongsTo(Client, { foreignKey: 'clientId', as: 'client' });
+
+// Client - User
+Client.hasMany(User, { foreignKey: 'clientId', as: 'users' });
+User.belongsTo(Client, { foreignKey: 'clientId', as: 'client' });
+
+// Church - Payment
+Church.hasMany(Payment, { foreignKey: 'churchId', as: 'payments', onDelete: 'CASCADE' });
+Payment.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// Member - Payment
+Member.hasMany(Payment, { foreignKey: 'memberId', as: 'payments' });
+Payment.belongsTo(Member, { foreignKey: 'memberId', as: 'member' });
+
 export interface DbModels {
   Church: typeof Church;
   User: typeof User;
@@ -283,6 +305,9 @@ export interface DbModels {
   PrayerRequest: typeof PrayerRequest;
   PastoralVisit: typeof PastoralVisit;
   ChurchDocument: typeof ChurchDocument;
+  FeatureFlag: typeof FeatureFlag;
+  Client: typeof Client;
+  Payment: typeof Payment;
   sequelize: typeof sequelize;
 }
 
@@ -310,6 +335,9 @@ export const db: DbModels = {
   PrayerRequest,
   PastoralVisit,
   ChurchDocument,
+  FeatureFlag,
+  Client,
+  Payment,
   sequelize,
 };
 
@@ -339,4 +367,7 @@ export {
   PrayerRequest,
   PastoralVisit,
   ChurchDocument,
+  FeatureFlag,
+  Client,
+  Payment,
 };

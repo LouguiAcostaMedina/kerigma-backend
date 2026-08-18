@@ -30,6 +30,9 @@ import ministryRoutes from './routes/ministry.routes';
 import pastoralCareRoutes from './routes/pastoralCare.routes';
 import documentRoutes from './routes/document.routes';
 import baptismPipelineRoutes from './routes/baptismPipeline.routes';
+import clientRoutes from './routes/client.routes';
+import paymentRoutes from './routes/payment.routes';
+import featureFlagRoutes from './routes/featureFlag.routes';
 import logger from './utils/logger';
 
 export function createApp(): Express {
@@ -118,8 +121,11 @@ export function createApp(): Express {
   app.use(`${basePath}/pastoral-care`, auditWritable, pastoralCareRoutes);
   app.use(`${basePath}/documents`, auditWritable, documentRoutes);
   app.use(`${basePath}/baptism-pipeline`, baptismPipelineRoutes);
+  app.use(`${basePath}/clients`, clientRoutes);
+  app.use(`${basePath}/payments`, auditWritable, paymentRoutes);
   app.use(`${basePath}/dashboard`, dashboardRoutes);
   app.use(`${basePath}/audit-logs`, auditRoutes);
+  app.use(`${basePath}/feature-flags`, featureFlagRoutes);
   app.use(`${basePath}/users`, auditWritable, userRoutes);
 
   app.get('/health', (_req: Request, res: Response): void => {
