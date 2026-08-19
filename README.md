@@ -114,6 +114,20 @@ npm run test:coverage
 
 Servicios cubiertos al 100% (líneas/funciones): `metric.service`, `attendance.service`, `goal.service`.
 
+### Smoke Test (endpoints contra BD real)
+
+Verifica que cada endpoint principal devuelve una respuesta válida (no 500) haciendo login real y consultando cada feature.
+
+```bash
+# Con defaults (localhost:5000, admin@misionero.com)
+node scripts/smoke-test.js
+
+# Con variables personalizadas
+BASE_URL=https://your-api.com SMOKE_USER=admin@misionero.com SMOKE_PASS=secret node scripts/smoke-test.js
+```
+
+El script: (1) hace login, (2) envía GET a 23 endpoints principales, (3) reporta OK/FAIL por endpoint, (4) exit code 1 si algún endpoint devuelve 5xx.
+
 ## Documentación
 
 - `REGLAS.md` — reglas de codificación del backend.

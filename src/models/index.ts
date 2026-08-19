@@ -159,6 +159,18 @@ DisciplePair.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
 User.hasMany(AuditLog, { foreignKey: 'actorUserId', as: 'auditLogs', onDelete: 'CASCADE' });
 AuditLog.belongsTo(User, { foreignKey: 'actorUserId', as: 'actor' });
 
+// Church - Activity
+Church.hasMany(Activity, { foreignKey: 'churchId', as: 'activities', onDelete: 'CASCADE' });
+Activity.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });
+
+// Group - Activity
+Group.hasMany(Activity, { foreignKey: 'groupId', as: 'activities', onDelete: 'SET NULL' });
+Activity.belongsTo(Group, { foreignKey: 'groupId', as: 'group' });
+
+// User (creator) - Activity
+User.hasMany(Activity, { foreignKey: 'createdBy', as: 'createdActivities' });
+Activity.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
 // Church - FinancialContribution
 Church.hasMany(FinancialContribution, { foreignKey: 'churchId', as: 'financialContributions', onDelete: 'CASCADE' });
 FinancialContribution.belongsTo(Church, { foreignKey: 'churchId', as: 'church' });

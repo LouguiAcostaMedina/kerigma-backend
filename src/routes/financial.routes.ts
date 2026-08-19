@@ -14,16 +14,11 @@ import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
-const financialRoles = ['super_admin', 'admin', 'director', 'tesorero'] as const;
+const readRoles = ['super_admin', 'admin', 'director', 'tesorero'] as const;
+const writeRoles = ['tesorero'] as const;
 
 router.use(requireAuth);
-router.use(requireRole(...financialRoles));
-
-router.post(
-  '/',
-  validate(createContributionSchema),
-  asyncHandler(financialController.createContribution),
-);
+router.use(requireRole(...readRoles));
 
 router.get(
   '/',
@@ -55,8 +50,16 @@ router.get(
   asyncHandler(financialController.getContributionById),
 );
 
+router.post(
+  '/',
+  requireRole(...writeRoles),
+  validate(createContributionSchema),
+  asyncHandler(financialController.createContribution),
+);
+
 router.delete(
   '/:id',
+  requireRole(...writeRoles),
   validateParams(contributionIdParamSchema),
   asyncHandler(financialController.deleteContribution),
 );
